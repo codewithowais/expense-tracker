@@ -61,6 +61,12 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
           setText(raw);
           onChange(raw.trim() === "" ? null : parseMoneyInput(raw, decimals));
         }}
+        onBlur={() => {
+          // Normalize the display to the actual stored (rounded) value so what
+          // you see matches what's saved — e.g. "100.5" → "101" for PKR.
+          const parsed = parseMoneyInput(text, decimals);
+          setText(parsed != null ? String(parsed) : "");
+        }}
         className={cn(
           "w-full rounded-2xl border border-input bg-transparent pr-4 font-heading font-semibold tabular-nums outline-none transition-colors",
           "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40",

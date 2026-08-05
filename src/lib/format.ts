@@ -13,7 +13,9 @@ export function sumMoney(values: number[], decimals = 2): number {
 
 export function roundMoney(value: number, decimals = 2): number {
   const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
+  // Round the magnitude then reapply the sign, so negatives round symmetrically
+  // (native Math.round(-0.5) === -0, breaking symmetry with +0.5 → 1).
+  return (Math.sign(value) * Math.round(Math.abs(value) * factor)) / factor;
 }
 
 export function formatCurrency(
@@ -147,7 +149,8 @@ export function formatClock(iso: string): string {
 
 /** Local date + 12-hour time, e.g. "5 Aug 2026, 2:45 PM". */
 export function formatDateTime(iso: string): string {
-  const d = new Date(iso);
+  // Parse a bare "YYYY-MM-DD" as local midnight (native Date treats it as UTC).
+  const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
   if (Number.isNaN(d.getTime())) return "";
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",

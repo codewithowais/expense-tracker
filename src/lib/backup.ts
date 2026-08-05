@@ -2,10 +2,11 @@ import { getDB } from "@/lib/db/database";
 import { ensureSeed } from "@/lib/db/seed";
 import { categoryRepo } from "@/lib/repositories/categories";
 import { transactionRepo } from "@/lib/repositories/transactions";
+import { settingsRepo } from "@/lib/repositories/settings";
 import { nowISO } from "@/lib/crypto";
 import { parseMoneyInput } from "@/lib/format";
 import { toCSV, parseCSV } from "@/lib/csv";
-import { CATEGORY_COLORS, PAYMENT_METHODS } from "@/lib/constants";
+import { CATEGORY_COLORS, CURRENCIES, PAYMENT_METHODS } from "@/lib/constants";
 import type {
   Budget,
   Category,
@@ -193,10 +194,22 @@ export interface CSVImportResult {
 
 const VALID_METHODS = new Set(PAYMENT_METHODS.map((m) => m.value));
 
+/** True only for a real calendar date in strict YYYY-MM-DD form. */
+function isValidISODate(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [y, m, d] = s.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
 /** Import transactions from CSV, creating categories by name as needed. */
 export async function importTransactionsCSV(text: string): Promise<CSVImportResult> {
   const rows = parseCSV(text);
   if (rows.length === 0) throw new Error("The CSV file has no rows.");
+
+  // Round imported amounts to the active currency's precision.
+  const settings = await settingsRepo.get();
+  const decimals = CURRENCIES[settings?.currency ?? "PKR"].decimals;
 
   const cats = await categoryRepo.list(true);
   const catKey = (name: string, type: TxType) => `${type}:${name.toLowerCase()}`;
@@ -216,9 +229,9 @@ export async function importTransactionsCSV(text: string): Promise<CSVImportResu
 
   for (const row of rows) {
     const type: TxType = row.type?.toLowerCase() === "income" ? "income" : "expense";
-    const amount = parseMoneyInput(row.amount ?? "");
+    const amount = parseMoneyInput(row.amount ?? "", decimals);
     const date = (row.date ?? "").trim();
-    if (!amount || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (!amount || amount <= 0 || !isValidISODate(date)) {
       skipped++;
       continue;
     }
