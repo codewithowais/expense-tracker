@@ -24,24 +24,29 @@ export const budgetRepo = {
    * "same" budget offline converge to one row on sync instead of both
    * surviving as duplicates.
    */
-  async upsert(input: BudgetInput): Promise<Budget> {
+  /**
+   * @param previousId when editing, the id of the budget being edited — so that
+   * changing its scope/category retires the OLD row instead of orphaning it.
+   */
+  async upsert(input: BudgetInput, previousId?: string): Promise<Budget> {
     const db = getDB();
     const now = nowISO();
     const id = budgetId(input.scope, input.categoryId);
 
     // Reconcile: tombstone any OTHER live budget for the same scope/category
     // that has a different id (e.g. a legacy random-id row, or a duplicate
-    // created offline on another device). Without this, editing a pre-existing
-    // budget would write the deterministic-id row and leave the old one behind
-    // as a stale duplicate — so the edit appears not to take effect.
+    // created offline on another device), PLUS the specific row being edited if
+    // its scope/category changed. Without this, an edit would write the
+    // deterministic-id row and leave the old one behind as a stale duplicate.
     const siblings =
       input.scope === "overall"
         ? await db.budgets.where("scope").equals("overall").toArray()
         : await db.budgets.where("categoryId").equals(input.categoryId ?? "").toArray();
-    for (const s of siblings) {
-      if (s.id !== id && !s.deletedAt) {
-        await db.budgets.update(s.id, { deletedAt: now, updatedAt: now });
-      }
+    const toRetire = new Set(siblings.filter((s) => !s.deletedAt).map((s) => s.id));
+    if (previousId) toRetire.add(previousId);
+    toRetire.delete(id);
+    for (const staleId of toRetire) {
+      await db.budgets.update(staleId, { deletedAt: now, updatedAt: now });
     }
 
     const existing = await db.budgets.get(id);

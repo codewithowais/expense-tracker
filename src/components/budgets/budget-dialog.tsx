@@ -38,7 +38,7 @@ interface BudgetDialogProps {
 }
 
 function fieldError(msg?: string) {
-  return msg ? <p className="text-xs font-medium text-destructive">{msg}</p> : null;
+  return msg ? <p role="alert" className="text-xs font-medium text-destructive">{msg}</p> : null;
 }
 
 /** Create/edit dialog for a monthly budget, remounted fresh each time it opens. */
@@ -124,11 +124,14 @@ function BudgetDialogForm({ budget, onDone, onCancel }: BudgetDialogFormProps) {
       return;
     }
     try {
-      await budgetRepo.upsert({
-        scope: values.scope,
-        categoryId: values.scope === "overall" ? null : values.categoryId,
-        amount: values.amount,
-      });
+      await budgetRepo.upsert(
+        {
+          scope: values.scope,
+          categoryId: values.scope === "overall" ? null : values.categoryId,
+          amount: values.amount,
+        },
+        budget?.id,
+      );
       toast.success(isEdit ? "Budget updated" : "Budget created");
       onDone();
     } catch {

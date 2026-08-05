@@ -29,7 +29,8 @@ export default function BudgetsPage() {
   );
 
   const budgets = useBudgets();
-  const categories = useCategories();
+  // Include archived categories so a budget's label/icon survives archiving.
+  const categories = useCategories(true);
   const txs = useTransactions({ range });
 
   const [dialogOpen, setDialogOpen] = useState(false);
