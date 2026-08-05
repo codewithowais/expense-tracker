@@ -1,5 +1,10 @@
 import { getDB, withoutChangeEvents } from "@/lib/db/database";
-import { metaRepo, SYNC_CURSOR_KEY, SYNC_LAST_AT_KEY } from "@/lib/repositories/meta";
+import {
+  metaRepo,
+  SYNC_CURSOR_KEY,
+  SYNC_LAST_AT_KEY,
+  SYNC_PUSH_CURSOR_KEY,
+} from "@/lib/repositories/meta";
 import {
   SYNC_COLLECTIONS,
   type SyncCollection,
@@ -50,29 +55,36 @@ async function doSync(): Promise<SyncOutcome> {
   }
 
   const db = getDB();
-  const cursor = (await metaRepo.get(SYNC_CURSOR_KEY)) ?? null;
+  // Two separate cursors so a peer device's skewed clock can never suppress
+  // this device's own pushes: `pullCursor` bounds what we ask the server for,
+  // `pushCursor` bounds which local rows we consider "already sent" — and is
+  // only ever advanced using THIS device's own clock (`maxLocal` below).
+  const pullCursor = (await metaRepo.get(SYNC_CURSOR_KEY)) ?? null;
+  const pushCursor = (await metaRepo.get(SYNC_PUSH_CURSOR_KEY)) ?? pullCursor;
 
-  // --- Gather local changes since the cursor ---
+  // --- Gather local changes since the push cursor ---
   const changes: SyncPushGroup[] = [];
-  let maxLocal = cursor ?? "";
+  let maxLocal = pushCursor ?? "";
   for (const collection of SYNC_COLLECTIONS) {
     const rows = (await db.table(collection).toArray()) as Row[];
     const records: SyncRecord[] = [];
     for (const row of rows) {
       if (!row.updatedAt) continue;
-      if (cursor && row.updatedAt <= cursor) continue;
+      // Track the newest local timestamp across ALL scanned rows (this
+      // device's own clock only) — never derived from remote data.
+      if (row.updatedAt > maxLocal) maxLocal = row.updatedAt;
+      if (pushCursor && row.updatedAt <= pushCursor) continue;
       records.push({
         id: row.id,
         updatedAt: row.updatedAt,
         deletedAt: row.deletedAt ?? null,
         doc: row,
       });
-      if (row.updatedAt > maxLocal) maxLocal = row.updatedAt;
     }
     if (records.length) changes.push({ collection, records });
   }
 
-  const payload: SyncRequest = { since: cursor, changes };
+  const payload: SyncRequest = { since: pullCursor, changes };
 
   // --- Exchange with the server ---
   let data: SyncResponse;
@@ -97,7 +109,7 @@ async function doSync(): Promise<SyncOutcome> {
 
   // --- Apply pulled records (LWW) without re-triggering change events ---
   try {
-    let maxRemote = maxLocal;
+    let maxRemote = pullCursor ?? "";
     const byCollection = new Map<SyncCollection, SyncResponse["records"]>();
     for (const rec of data.records) {
       const arr = byCollection.get(rec.collection) ?? [];
@@ -131,8 +143,10 @@ async function doSync(): Promise<SyncOutcome> {
     });
 
     const at = new Date().toISOString();
-    const newCursor = maxRemote > (cursor ?? "") ? maxRemote : (cursor ?? at);
-    await metaRepo.set(SYNC_CURSOR_KEY, newCursor);
+    const newPullCursor = maxRemote > (pullCursor ?? "") ? maxRemote : (pullCursor ?? at);
+    const newPushCursor = maxLocal > (pushCursor ?? "") ? maxLocal : (pushCursor ?? at);
+    await metaRepo.set(SYNC_CURSOR_KEY, newPullCursor);
+    await metaRepo.set(SYNC_PUSH_CURSOR_KEY, newPushCursor);
     await metaRepo.set(SYNC_LAST_AT_KEY, at);
 
     const pushed = changes.reduce((n, g) => n + g.records.length, 0);

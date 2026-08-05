@@ -12,4 +12,7 @@ export const metaRepo = {
 };
 
 export const SYNC_CURSOR_KEY = "sync.cursor";
+/** Cursor for local rows already pushed upstream (separate from the pull cursor
+ * so a peer device's skewed clock can never suppress this device's own pushes). */
+export const SYNC_PUSH_CURSOR_KEY = "sync.pushCursor";
 export const SYNC_LAST_AT_KEY = "sync.lastAt";
