@@ -52,7 +52,7 @@ const KIND_OPTIONS: { value: DebtKind; label: string; helper: string }[] = [
 ];
 
 function fieldError(msg?: string) {
-  return msg ? <p className="text-xs font-medium text-destructive">{msg}</p> : null;
+  return msg ? <p role="alert" className="text-xs font-medium text-destructive">{msg}</p> : null;
 }
 
 /** Create/edit dialog for a single debt entry (lent/received/borrowed/repaid). */

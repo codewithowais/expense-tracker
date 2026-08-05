@@ -44,7 +44,7 @@ interface ContributionDialogProps {
 }
 
 function fieldError(msg?: string) {
-  return msg ? <p className="text-xs font-medium text-destructive">{msg}</p> : null;
+  return msg ? <p role="alert" className="text-xs font-medium text-destructive">{msg}</p> : null;
 }
 
 /** Create/edit dialog for a savings contribution or withdrawal. */

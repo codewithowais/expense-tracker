@@ -32,7 +32,7 @@ interface CategoryDialogProps {
 }
 
 function fieldError(msg?: string) {
-  return msg ? <p className="text-xs font-medium text-destructive">{msg}</p> : null;
+  return msg ? <p role="alert" className="text-xs font-medium text-destructive">{msg}</p> : null;
 }
 
 function defaultsFor(category?: Category): CategoryFormValues {
@@ -59,11 +59,12 @@ export function CategoryDialog({ open, onOpenChange, category }: CategoryDialogP
     defaultValues: defaultsFor(category),
   });
 
-  // Reset the form whenever the dialog opens or the target category changes.
+  // Reset only when the dialog opens or the target changes (keyed by id), not
+  // on every `category` object-identity change — matches person/goal dialogs.
   useEffect(() => {
     if (open) reset(defaultsFor(category));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, category]);
+  }, [open, category?.id]);
 
   const name = useWatch({ control, name: "name" });
   const color = useWatch({ control, name: "color" });

@@ -145,63 +145,58 @@ function TransactionRow({ t, cat, bordered, onEdit, onDeleteRequest }: Transacti
     setExpanded((v) => !v);
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggle();
-    }
-  }
-
   const editedSeparately = t.updatedAt !== t.createdAt;
 
   return (
     <li className={cn(bordered && "border-t border-border")}>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onClick={toggle}
-        onKeyDown={handleKeyDown}
-        className="flex cursor-pointer items-center gap-3 px-3 py-3 transition-colors hover:bg-accent/40 sm:px-4"
-      >
-        <CategoryIcon icon={cat?.icon ?? "ReceiptText"} color={cat?.color ?? "chart-2"} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-foreground">{t.note || cat?.name || "Transaction"}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {cat?.name ?? "Uncategorized"} · {methodLabel(t.method)}
-          </p>
-        </div>
-        <Money amount={t.amount} tone={t.type} signed className="text-sm font-semibold sm:text-base" />
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
-            expanded && "rotate-180",
-          )}
-          aria-hidden
-        />
-        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 shrink-0 rounded-lg text-muted-foreground"
-                aria-label="Transaction actions"
-              >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="size-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={onDeleteRequest}>
-                <Trash2 className="size-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      {/* Toggle button and actions menu are SIBLINGS (not nested) to avoid an
+          interactive-inside-interactive control. */}
+      <div className="flex items-center transition-colors hover:bg-accent/40">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          onClick={toggle}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-4"
+        >
+          <CategoryIcon icon={cat?.icon ?? "ReceiptText"} color={cat?.color ?? "chart-2"} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium text-foreground">
+              {t.note || cat?.name || "Transaction"}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {cat?.name ?? "Uncategorized"} · {methodLabel(t.method)}
+            </p>
+          </div>
+          <Money amount={t.amount} tone={t.type} signed className="text-sm font-semibold sm:text-base" />
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+              expanded && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mr-1 size-8 shrink-0 rounded-lg text-muted-foreground"
+              aria-label="Transaction actions"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>
+              <Pencil className="size-4" /> Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={onDeleteRequest}>
+              <Trash2 className="size-4" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <AnimatePresence initial={false}>

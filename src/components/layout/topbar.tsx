@@ -76,6 +76,19 @@ export function Topbar() {
                   </ul>
                 </div>
               ))}
+              {pinRequired ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    lock();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent/60"
+                >
+                  <Lock className="size-[1.15rem] text-muted-foreground" />
+                  Lock app
+                </button>
+              ) : null}
             </nav>
           </SheetContent>
         </Sheet>
