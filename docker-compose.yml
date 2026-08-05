@@ -1,0 +1,17 @@
+# Convenience wrapper: `docker compose up --build`.
+# Runtime secrets (DATABASE_URL, APP_PIN, SYNC_SECRET) come from .env via env_file.
+# The public NEXT_PUBLIC_SYNC_TOKEN must be a BUILD arg (it is inlined at build time).
+services:
+  ledgerly:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SYNC_TOKEN: ${NEXT_PUBLIC_SYNC_TOKEN:-}
+    image: ledgerly:latest
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped

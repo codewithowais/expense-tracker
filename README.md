@@ -72,6 +72,26 @@ Ledgerly ships a service worker ([`src/app/sw.js/route.ts`](src/app/sw.js/route.
 
 The worker registers in **production only** (it would fight Turbopack HMR in `next dev`), so test it with `npm run build && npx next start`.
 
+## Run with Docker
+
+A multi-stage [`Dockerfile`](Dockerfile) pinned to **Node 22** builds and runs the app the same way regardless of the host's Node version (a host Node change can't break it). It uses Next.js standalone output (`output: "standalone"`) for a small, self-contained image.
+
+```bash
+docker compose up --build
+# → http://localhost:3000
+```
+
+Or plain Docker:
+
+```bash
+docker build -t ledgerly --build-arg NEXT_PUBLIC_SYNC_TOKEN="$NEXT_PUBLIC_SYNC_TOKEN" .
+docker run -p 3000:3000 --env-file .env ledgerly
+```
+
+- **Server-only** vars (`DATABASE_URL`, `APP_PIN`, `SYNC_SECRET`) are read at **runtime** — pass them with `--env-file .env` (compose uses `env_file`).
+- `NEXT_PUBLIC_*` vars are inlined at **build time**, so `NEXT_PUBLIC_SYNC_TOKEN` must be a **build arg** (already wired in `docker-compose.yml`).
+- Building/running outside Docker needs **Node ≥ 20** (see `engines`) — Next.js 16 does not run on Node 16.
+
 ## Scripts
 
 ```bash
