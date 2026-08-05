@@ -66,7 +66,13 @@ export function LedgerView({ type }: LedgerViewProps) {
   const openCreate = useQuickAdd((s) => s.openCreate);
   const { fmt } = useMoney();
 
-  const [range, setRange] = useState<DateRange>(() => monthRange(new Date(), settings?.monthStartDay ?? 1));
+  // `null` until the user navigates — so the default range follows the real
+  // salary-cycle start day once settings resolve (they load asynchronously).
+  const [userRange, setRange] = useState<DateRange | null>(null);
+  const range = useMemo(
+    () => userRange ?? monthRange(new Date(), monthStartDay),
+    [userRange, monthStartDay],
+  );
   const prevRange = useMemo(() => shiftMonthRange(range, -1, monthStartDay), [range, monthStartDay]);
 
   const txs = useTransactions({ range, types: [type] });

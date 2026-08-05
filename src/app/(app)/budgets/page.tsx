@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { BudgetDialog } from "@/components/budgets/budget-dialog";
 import { BudgetCard } from "@/components/budgets/budget-card";
 import { budgetProgress } from "@/lib/analytics";
-import { monthRange } from "@/lib/dates";
+import { monthRange, type DateRange } from "@/lib/dates";
 import { formatPercent, sumMoney } from "@/lib/format";
 import { useBudgets, useCategories, useSettings, useTransactions } from "@/lib/hooks/use-data";
 import type { Budget } from "@/lib/types";
@@ -20,7 +20,13 @@ import type { Budget } from "@/lib/types";
 export default function BudgetsPage() {
   const settings = useSettings();
   const monthStartDay = settings?.monthStartDay ?? 1;
-  const [range, setRange] = useState(() => monthRange(new Date(), settings?.monthStartDay ?? 1));
+  // `null` until the user navigates — so the default range follows the real
+  // salary-cycle start day once settings resolve (they load asynchronously).
+  const [userRange, setRange] = useState<DateRange | null>(null);
+  const range = useMemo(
+    () => userRange ?? monthRange(new Date(), monthStartDay),
+    [userRange, monthStartDay],
+  );
 
   const budgets = useBudgets();
   const categories = useCategories();

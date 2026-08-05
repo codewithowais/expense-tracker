@@ -33,7 +33,7 @@ import {
   pctChange,
   totals as computeTotals,
 } from "@/lib/analytics";
-import { monthRange, rangeLabel, shiftMonthRange } from "@/lib/dates";
+import { monthRange, rangeLabel, shiftMonthRange, type DateRange } from "@/lib/dates";
 import { generateDemoData } from "@/lib/db/seed";
 import {
   useBudgets,
@@ -60,7 +60,13 @@ function greeting(name?: string) {
 export default function DashboardPage() {
   const settings = useSettings();
   const monthStartDay = settings?.monthStartDay ?? 1;
-  const [range, setRange] = useState(() => monthRange(new Date(), 1));
+  // `null` until the user navigates months — so the default range follows the
+  // real salary-cycle start day once settings resolve (they load async).
+  const [userRange, setRange] = useState<DateRange | null>(null);
+  const range = useMemo(
+    () => userRange ?? monthRange(new Date(), monthStartDay),
+    [userRange, monthStartDay],
+  );
   const prevRange = useMemo(() => shiftMonthRange(range, -1, monthStartDay), [range, monthStartDay]);
 
   const openCreate = useQuickAdd((s) => s.openCreate);
@@ -188,7 +194,7 @@ export default function DashboardPage() {
               icon={Receipt}
               accent="chart-2"
               value={<span className="tabular-nums">{view.t.count}</span>}
-              hint={`this ${rangeLabel(range).split(" ")[0] === "All" ? "period" : "month"}`}
+              hint="this month"
             />
           </div>
 

@@ -44,12 +44,15 @@ export const PRESETS: { key: PresetKey; label: string }[] = [
  * day (e.g. monthStartDay=25 → 25 Jan–24 Feb).
  */
 export function monthRange(ref: Date, monthStartDay = 1): DateRange {
-  if (monthStartDay <= 1) {
+  // Clamp to 1..28 so a bad/imported value can never roll the JS Date into the
+  // wrong month (e.g. `new Date(y, 1, 31)` overflows into March).
+  const startDay = Math.min(28, Math.max(1, Math.floor(monthStartDay) || 1));
+  if (startDay <= 1) {
     return { start: toISODate(startOfMonth(ref)), end: toISODate(endOfMonth(ref)) };
   }
   const day = ref.getDate();
-  const anchor = day >= monthStartDay ? ref : subMonths(ref, 1);
-  const start = new Date(anchor.getFullYear(), anchor.getMonth(), monthStartDay);
+  const anchor = day >= startDay ? ref : subMonths(ref, 1);
+  const start = new Date(anchor.getFullYear(), anchor.getMonth(), startDay);
   const end = subDays(addMonths(start, 1), 1);
   return { start: toISODate(start), end: toISODate(end) };
 }
