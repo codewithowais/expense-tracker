@@ -37,7 +37,7 @@ export function DateField({
           type="button"
           variant="outline"
           aria-invalid={ariaInvalid}
-          className={cn("h-11 w-full justify-start gap-2 rounded-2xl font-normal", className)}
+          className={cn("w-full justify-start gap-2 font-normal", className)}
         >
           <CalendarDays className="size-4 text-muted-foreground" />
           {value ? formatDate(value, "medium") : "Select date"}

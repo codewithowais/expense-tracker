@@ -126,7 +126,7 @@ export function FilterBar({ value, onChange, className }: FilterBarProps) {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Search by note…"
-              className="h-10 rounded-xl pr-9 pl-9"
+              className="pr-9 pl-9"
             />
             {searchText ? (
               <Button
@@ -175,7 +175,7 @@ export function FilterBar({ value, onChange, className }: FilterBarProps) {
               value={value.method}
               onValueChange={(v) => update("method", v as PaymentMethod | "all")}
             >
-              <SelectTrigger id="tx-method" className="h-10 w-full rounded-xl">
+              <SelectTrigger id="tx-method" className="w-full">
                 <SelectValue placeholder="All methods" />
               </SelectTrigger>
               <SelectContent>
@@ -194,7 +194,7 @@ export function FilterBar({ value, onChange, className }: FilterBarProps) {
               Sort transactions
             </Label>
             <Select value={value.sort} onValueChange={(v) => update("sort", v as TxSort)}>
-              <SelectTrigger id="tx-sort" className="h-10 w-full rounded-xl">
+              <SelectTrigger id="tx-sort" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

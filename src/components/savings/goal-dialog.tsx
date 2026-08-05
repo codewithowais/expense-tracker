@@ -169,7 +169,7 @@ export function GoalDialog({ open, onOpenChange, goal }: GoalDialogProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-11 shrink-0 rounded-2xl text-muted-foreground"
+                      className="shrink-0 text-muted-foreground"
                       aria-label="Clear target date"
                       onClick={() => field.onChange(null)}
                     >

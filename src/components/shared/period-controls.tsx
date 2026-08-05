@@ -34,7 +34,7 @@ export function MonthSwitcher({ range, onChange, monthStartDay = 1, maxToday = t
       <Button
         variant="ghost"
         size="icon"
-        className="size-8 rounded-xl"
+        className="size-9 rounded-xl"
         aria-label="Previous month"
         onClick={() => onChange(shiftMonthRange(range, -1, monthStartDay))}
       >
@@ -46,7 +46,7 @@ export function MonthSwitcher({ range, onChange, monthStartDay = 1, maxToday = t
       <Button
         variant="ghost"
         size="icon"
-        className="size-8 rounded-xl"
+        className="size-9 rounded-xl"
         aria-label="Next month"
         disabled={atCurrent}
         onClick={() => onChange(next)}
@@ -65,7 +65,7 @@ interface PresetSelectProps {
 export function PresetSelect({ value, onChange }: PresetSelectProps) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as PresetKey)}>
-      <SelectTrigger className="h-10 w-[170px] rounded-xl">
+      <SelectTrigger className="w-[170px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

@@ -35,7 +35,7 @@ export function CategorySelect({
 
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} className="h-11 w-full rounded-2xl" {...rest}>
+      <SelectTrigger id={id} className="w-full" {...rest}>
         <SelectValue placeholder="Select category" />
       </SelectTrigger>
       <SelectContent>

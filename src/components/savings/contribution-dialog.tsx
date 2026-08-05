@@ -165,7 +165,7 @@ function ContributionDialogForm({
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger
                     id="contribution-goal"
-                    className="h-11 w-full rounded-2xl"
+                    className="w-full"
                     aria-invalid={!!errors.goalId}
                   >
                     <SelectValue placeholder="Select goal" />

@@ -160,7 +160,7 @@ function DebtEntryDialogForm({
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger
                     id="debt-person"
-                    className="h-11 w-full rounded-2xl"
+                    className="w-full"
                     aria-invalid={!!errors.personId}
                   >
                     <SelectValue placeholder="Select person" />

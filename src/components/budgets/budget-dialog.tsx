@@ -219,7 +219,7 @@ function BudgetDialogForm({ budget, onDone, onCancel }: BudgetDialogFormProps) {
                 >
                   <SelectTrigger
                     id="budget-category"
-                    className="h-11 w-full rounded-2xl"
+                    className="w-full"
                     aria-invalid={!!errors.categoryId}
                   >
                     <SelectValue placeholder="Select category" />

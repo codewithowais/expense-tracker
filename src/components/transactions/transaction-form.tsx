@@ -154,7 +154,7 @@ export function TransactionForm({
             name="method"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="method" className="h-11 w-full rounded-2xl">
+                <SelectTrigger id="method" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -174,7 +174,6 @@ export function TransactionForm({
         <Label htmlFor="note">Note</Label>
         <Input
           id="note"
-          className="h-11 rounded-2xl"
           placeholder="What was it for?"
           {...register("note")}
           aria-invalid={!!errors.note}
