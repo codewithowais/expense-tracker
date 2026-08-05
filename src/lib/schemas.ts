@@ -68,7 +68,11 @@ export type SavingsGoalFormValues = z.infer<typeof savingsGoalSchema>;
 
 export const contributionSchema = z.object({
   goalId: z.string().min(1, "Choose a goal"),
-  amount: z.number().refine((n) => n !== 0, "Enter an amount"),
+  amount: z
+    .number()
+    .gte(-1_000_000_000, "That amount looks too large")
+    .lte(1_000_000_000, "That amount looks too large")
+    .refine((n) => n !== 0, "Enter an amount"),
   note: z.string().max(140, "Keep the note under 140 characters").optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a valid date"),
 });

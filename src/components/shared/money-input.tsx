@@ -26,13 +26,14 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
 ) {
   const { code } = useMoney();
   const symbol = CURRENCIES[code].symbol;
+  const decimals = CURRENCIES[code].decimals;
   const [text, setText] = useState(value != null ? String(value) : "");
 
   // Sync inbound value (e.g. when editing) without clobbering active typing.
   useEffect(() => {
     if (value == null) {
       if (text !== "") setText("");
-    } else if (parseMoneyInput(text) !== value) {
+    } else if (parseMoneyInput(text, decimals) !== value) {
       setText(String(value));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,7 +59,7 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
         onChange={(e) => {
           const raw = e.target.value;
           setText(raw);
-          onChange(raw.trim() === "" ? null : parseMoneyInput(raw));
+          onChange(raw.trim() === "" ? null : parseMoneyInput(raw, decimals));
         }}
         className={cn(
           "w-full rounded-2xl border border-input bg-transparent pr-4 font-heading font-semibold tabular-nums outline-none transition-colors",

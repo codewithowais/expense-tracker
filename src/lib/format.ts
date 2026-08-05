@@ -55,28 +55,24 @@ export function formatCompact(amount: number, code: CurrencyCode): string {
 }
 
 /**
- * Parse free-form money input ("1,250.50", "Rs 1250", "1.2k") into a number.
- * Returns null when the string has no parseable numeric value.
+ * Parse free-form money input ("1,250.50", "Rs 1250", "1.2k") into a number,
+ * rounded to `decimals` places. Returns null when there is no valid amount.
+ * Rejects garbage strictly: "1e5", "5abc", "1.2.3" → null (never a wrong number).
  */
-export function parseMoneyInput(raw: string): number | null {
+export function parseMoneyInput(raw: string, decimals = 2): number | null {
   if (!raw) return null;
-  let s = raw.trim().toLowerCase().replace(/[^0-9.,kmb-]/g, "");
-  let multiplier = 1;
-  if (s.endsWith("k")) {
-    multiplier = 1_000;
-    s = s.slice(0, -1);
-  } else if (s.endsWith("m")) {
-    multiplier = 1_000_000;
-    s = s.slice(0, -1);
-  } else if (s.endsWith("b")) {
-    multiplier = 1_000_000_000;
-    s = s.slice(0, -1);
-  }
-  // Treat commas as thousands separators.
+  // Drop a leading non-numeric prefix (currency symbols/letters/spaces) only.
+  let s = raw.trim().toLowerCase().replace(/^[^\d.-]+/, "");
+  // Thousands separators.
   s = s.replace(/,/g, "");
-  const n = Number.parseFloat(s);
+  // A number with at most one trailing magnitude suffix, and nothing else.
+  const match = s.match(/^(-?\d*\.?\d+)(k|m|b)?$/);
+  if (!match) return null;
+  const n = Number.parseFloat(match[1]);
   if (!Number.isFinite(n)) return null;
-  return roundMoney(n * multiplier);
+  const mult =
+    match[2] === "k" ? 1_000 : match[2] === "m" ? 1_000_000 : match[2] === "b" ? 1_000_000_000 : 1;
+  return roundMoney(n * mult, decimals);
 }
 
 const DAY = 86_400_000;
@@ -123,11 +119,12 @@ export function formatPercent(value: number, digits = 0): string {
 
 /** Compact "time ago" label ("just now", "2m ago", "3h ago", or a date). */
 export function timeAgo(iso: string, now = Date.now()): string {
-  const t = new Date(iso).getTime();
+  // Parse bare "YYYY-MM-DD" as local midnight (native Date treats it as UTC).
+  const t = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).getTime();
   if (Number.isNaN(t)) return "";
   const diff = Math.max(0, now - t);
   const s = Math.floor(diff / 1000);
-  if (s < 45) return "just now";
+  if (s < 60) return "just now";
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
@@ -137,9 +134,27 @@ export function timeAgo(iso: string, now = Date.now()): string {
   return formatDate(toISODate(new Date(iso)), "medium");
 }
 
-/** Local clock time, e.g. "2:45 PM". */
+/** Local clock time in 12-hour format, e.g. "2:45 PM". */
 export function formatClock(iso: string): string {
+  const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(d);
+}
+
+/** Local date + 12-hour time, e.g. "5 Aug 2026, 2:45 PM". */
+export function formatDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(d);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(d);
 }

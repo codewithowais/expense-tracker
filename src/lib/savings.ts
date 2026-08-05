@@ -61,6 +61,6 @@ export function summarizeGoals(
     progress,
     totalSaved,
     totalTarget,
-    overallPct: totalTarget > 0 ? Math.min(100, (totalSaved / totalTarget) * 100) : 0,
+    overallPct: totalTarget > 0 ? Math.min(100, Math.max(0, (totalSaved / totalTarget) * 100)) : 0,
   };
 }
