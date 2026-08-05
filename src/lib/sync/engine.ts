@@ -55,25 +55,25 @@ async function doSync(): Promise<SyncOutcome> {
   }
 
   const db = getDB();
-  // Two separate cursors so a peer device's skewed clock can never suppress
-  // this device's own pushes: `pullCursor` bounds what we ask the server for,
-  // `pushCursor` bounds which local rows we consider "already sent" — and is
-  // only ever advanced using THIS device's own clock (`maxLocal` below).
+  // `pullCursor` bounds what we ask the server for. `pushCursor` bounds which
+  // local rows we consider "already sent" — it is advanced from THIS device's
+  // own wall clock (`syncStart`), never from any row's `updatedAt` (which, for
+  // rows pulled from a peer, carries that peer's clock). This makes push
+  // immune to another device's clock skew.
+  const syncStart = new Date().toISOString();
   const pullCursor = (await metaRepo.get(SYNC_CURSOR_KEY)) ?? null;
   const pushCursor = (await metaRepo.get(SYNC_PUSH_CURSOR_KEY)) ?? pullCursor;
 
-  // --- Gather local changes since the push cursor ---
+  // --- Gather local changes since the push cursor (via the updatedAt index) ---
   const changes: SyncPushGroup[] = [];
-  let maxLocal = pushCursor ?? "";
   for (const collection of SYNC_COLLECTIONS) {
-    const rows = (await db.table(collection).toArray()) as Row[];
+    const table = db.table(collection);
+    const rows = (pushCursor
+      ? await table.where("updatedAt").above(pushCursor).toArray()
+      : await table.toArray()) as Row[];
     const records: SyncRecord[] = [];
     for (const row of rows) {
       if (!row.updatedAt) continue;
-      // Track the newest local timestamp across ALL scanned rows (this
-      // device's own clock only) — never derived from remote data.
-      if (row.updatedAt > maxLocal) maxLocal = row.updatedAt;
-      if (pushCursor && row.updatedAt <= pushCursor) continue;
       records.push({
         id: row.id,
         updatedAt: row.updatedAt,
@@ -144,7 +144,9 @@ async function doSync(): Promise<SyncOutcome> {
 
     const at = new Date().toISOString();
     const newPullCursor = maxRemote > (pullCursor ?? "") ? maxRemote : (pullCursor ?? at);
-    const newPushCursor = maxLocal > (pushCursor ?? "") ? maxLocal : (pushCursor ?? at);
+    // Advance the push cursor to this device's own wall clock (monotonic),
+    // never to a row/remote timestamp.
+    const newPushCursor = pushCursor && pushCursor > syncStart ? pushCursor : syncStart;
     await metaRepo.set(SYNC_CURSOR_KEY, newPullCursor);
     await metaRepo.set(SYNC_PUSH_CURSOR_KEY, newPushCursor);
     await metaRepo.set(SYNC_LAST_AT_KEY, at);
