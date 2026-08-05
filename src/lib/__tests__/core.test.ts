@@ -85,6 +85,21 @@ describe("money math", () => {
     expect(parseMoneyInput("100.55", 2)).toBe(100.55);
   });
 
+  it("accepts an in-progress trailing decimal point (no field-wipe)", () => {
+    // Regression: "12." must parse to 12, not null, so typing "12.50" isn't wiped.
+    expect(parseMoneyInput("12.")).toBe(12);
+    expect(parseMoneyInput(".5")).toBe(0.5);
+    expect(parseMoneyInput("12.50")).toBe(12.5);
+  });
+
+  it("rounds and sums negatives symmetrically", () => {
+    expect(roundMoney(-100.5, 0)).toBe(-101);
+    expect(roundMoney(-2.675)).toBe(-2.68);
+    // sumMoney stays consistent with roundMoney for negative halves.
+    expect(sumMoney([-2.675])).toBe(-2.68);
+    expect(sumMoney([0.1, 0.2])).toBe(0.3);
+  });
+
   it("formats percentages", () => {
     expect(formatPercent(42.4)).toBe("42%");
     expect(formatPercent(42.45, 1)).toBe("42.5%");

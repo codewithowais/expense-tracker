@@ -7,7 +7,12 @@ import type { CurrencyCode } from "./types";
  */
 export function sumMoney(values: number[], decimals = 2): number {
   const factor = 10 ** decimals;
-  const totalMinor = values.reduce((acc, v) => acc + Math.round(v * factor), 0);
+  // Sign-magnitude rounding per term, consistent with roundMoney (native
+  // Math.round(-0.5) === -0 would otherwise round negatives asymmetrically).
+  const totalMinor = values.reduce(
+    (acc, v) => acc + Math.sign(v) * Math.round(Math.abs(v) * factor),
+    0,
+  );
   return totalMinor / factor;
 }
 
@@ -67,8 +72,10 @@ export function parseMoneyInput(raw: string, decimals = 2): number | null {
   let s = raw.trim().toLowerCase().replace(/^[^\d.-]+/, "");
   // Thousands separators.
   s = s.replace(/,/g, "");
-  // A number with at most one trailing magnitude suffix, and nothing else.
-  const match = s.match(/^(-?\d*\.?\d+)(k|m|b)?$/);
+  // A number (allowing a trailing "." mid-typing, e.g. "12.") with at most one
+  // magnitude suffix, and nothing else. Accepting "12." keeps in-progress
+  // decimal entry from round-tripping through null and wiping the field.
+  const match = s.match(/^(-?(?:\d+\.?\d*|\.\d+))(k|m|b)?$/);
   if (!match) return null;
   const n = Number.parseFloat(match[1]);
   if (!Number.isFinite(n)) return null;
@@ -133,7 +140,7 @@ export function timeAgo(iso: string, now = Date.now()): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return formatDate(toISODate(new Date(iso)), "medium");
+  return formatDate(toISODate(new Date(iso.length === 10 ? `${iso}T00:00:00` : iso)), "medium");
 }
 
 /** Local clock time in 12-hour format, e.g. "2:45 PM". */
