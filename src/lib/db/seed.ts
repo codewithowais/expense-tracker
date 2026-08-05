@@ -13,7 +13,15 @@ let seedPromise: Promise<void> | null = null;
  * effect at app startup, never from a repository read used by `useLiveQuery`.
  */
 export function ensureSeed(): Promise<void> {
-  if (!seedPromise) seedPromise = runSeed();
+  if (!seedPromise) {
+    // Reset the memo on failure so a transient error doesn't permanently
+    // brick onboarding (AppGate would otherwise be stuck on the splash
+    // forever, since a rejected promise is memoized and never retried).
+    seedPromise = runSeed().catch((err) => {
+      seedPromise = null;
+      throw err;
+    });
+  }
   return seedPromise;
 }
 
@@ -51,7 +59,10 @@ async function runSeed(): Promise<void> {
       updatedAt: now,
       deletedAt: null,
     }));
-    await db.categories.bulkAdd(rows);
+    // bulkPut (not bulkAdd): idempotent with the deterministic ids, so a
+    // concurrent sync pull that already inserted these categories doesn't
+    // throw a ConstraintError here.
+    await db.categories.bulkPut(rows);
   }
 }
 

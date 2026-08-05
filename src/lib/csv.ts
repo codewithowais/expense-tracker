@@ -50,7 +50,11 @@ function parseRows(text: string): string[][] {
       } else {
         cell += ch;
       }
-    } else if (ch === '"') {
+    } else if (ch === '"' && cell === "") {
+      // Only treat a quote as opening a quoted field when it's the very
+      // first character of the field — a bare `"` elsewhere in an unquoted
+      // field is a literal character, not a mode toggle (otherwise it would
+      // swallow everything up to the next stray quote, including newlines).
       inQuotes = true;
     } else if (ch === ",") {
       row.push(cell);

@@ -1,5 +1,5 @@
 import { getDB } from "@/lib/db/database";
-import { newId, nowISO } from "@/lib/crypto";
+import { nowISO } from "@/lib/crypto";
 import type { Budget, BudgetScope } from "@/lib/types";
 
 export interface BudgetInput {
@@ -18,32 +18,27 @@ export const budgetRepo = {
     return getDB().budgets.get(id);
   },
 
-  /** Create or update the single overall budget or a per-category budget. */
+  /**
+   * Create or update the single overall budget or a per-category budget.
+   * Ids are DETERMINISTIC (not random) so two devices that each create the
+   * "same" budget offline converge to one row on sync instead of both
+   * surviving as duplicates.
+   */
   async upsert(input: BudgetInput): Promise<Budget> {
     const db = getDB();
     const now = nowISO();
-    const candidates =
-      input.scope === "overall"
-        ? await db.budgets.where("scope").equals("overall").toArray()
-        : await db.budgets.where("categoryId").equals(input.categoryId ?? "").toArray();
-    // Prefer a live row, but a tombstoned one can be revived instead of duplicated.
-    const existing = candidates.find((b) => !b.deletedAt) ?? candidates[0];
-
-    if (existing) {
-      const patch = { amount: input.amount, updatedAt: now, deletedAt: null };
-      await db.budgets.update(existing.id, patch);
-      return { ...existing, ...patch };
-    }
+    const id = budgetId(input.scope, input.categoryId);
+    const existing = await db.budgets.get(id);
     const row: Budget = {
-      id: newId(),
+      id,
       scope: input.scope,
       categoryId: input.scope === "overall" ? null : input.categoryId,
       amount: input.amount,
-      createdAt: now,
+      createdAt: existing?.createdAt ?? now,
       updatedAt: now,
       deletedAt: null,
     };
-    await db.budgets.add(row);
+    await db.budgets.put(row);
     return row;
   },
 
@@ -52,3 +47,7 @@ export const budgetRepo = {
     await getDB().budgets.update(id, { deletedAt: now, updatedAt: now });
   },
 };
+
+function budgetId(scope: BudgetScope, categoryId: string | null): string {
+  return scope === "overall" ? "budget-overall" : `budget-cat-${categoryId ?? ""}`;
+}
