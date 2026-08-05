@@ -59,15 +59,26 @@ export const categoryRepo = {
     const db = getDB();
     const now = nowISO();
     const usage = await this.usageCount(id);
-    if (usage > 0) {
-      if (!reassignToId) throw new Error("Category is in use; provide a reassignment target.");
-      await db.transactions
+    if (usage > 0 && !reassignToId) {
+      throw new Error("Category is in use; provide a reassignment target.");
+    }
+    // Reassign transactions, tombstone any budget for this category (so it
+    // doesn't become a zombie), and tombstone the category — all atomically.
+    await db.transaction("rw", db.transactions, db.budgets, db.categories, async () => {
+      if (usage > 0 && reassignToId) {
+        await db.transactions
+          .where("categoryId")
+          .equals(id)
+          .and((t) => !t.deletedAt)
+          .modify({ categoryId: reassignToId, updatedAt: now });
+      }
+      await db.budgets
         .where("categoryId")
         .equals(id)
-        .and((t) => !t.deletedAt)
-        .modify({ categoryId: reassignToId, updatedAt: now });
-    }
-    await db.categories.update(id, { deletedAt: now, updatedAt: now });
+        .and((b) => !b.deletedAt)
+        .modify({ deletedAt: now, updatedAt: now });
+      await db.categories.update(id, { deletedAt: now, updatedAt: now });
+    });
   },
 
   async archive(id: string, archived = true): Promise<void> {
