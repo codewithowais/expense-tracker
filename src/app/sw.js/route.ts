@@ -83,10 +83,39 @@ async function cacheFirst(req) {
   return res;
 }
 
+// A branded, auto-reconnecting loader shown only when a navigation fails AND
+// nothing (not even "/") is cached yet — instead of the browser's error page.
+const OFFLINE_HTML =
+  "<!doctype html><html lang='en'><head><meta charset='utf-8'>" +
+  "<meta name='viewport' content='width=device-width,initial-scale=1'>" +
+  "<title>Reconnecting - Ledgerly</title><style>" +
+  "*{box-sizing:border-box}html,body{height:100%;margin:0}" +
+  "body{display:flex;align-items:center;justify-content:center;background:#12211a;color:#e8efe9;" +
+  "font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}" +
+  ".card{text-align:center;padding:2rem}" +
+  ".spin{width:38px;height:38px;margin:0 auto 1.25rem;border:3px solid rgba(255,255,255,.16);" +
+  "border-top-color:#8fd3a8;border-radius:50%;animation:s .9s linear infinite}" +
+  "@keyframes s{to{transform:rotate(360deg)}}" +
+  "h1{font-size:1.05rem;font-weight:600;margin:0 0 .4rem}" +
+  "p{margin:0;font-size:.85rem;color:#9fb3a6;max-width:22rem}</style></head>" +
+  "<body><div class='card'><div class='spin'></div><h1>Reconnecting...</h1>" +
+  "<p>You appear to be offline. Ledgerly will open automatically as soon as the connection is back.</p></div>" +
+  "<script>function r(){location.reload()}addEventListener('online',r);" +
+  "setInterval(function(){if(navigator.onLine)r()},3000)</script></body></html>";
+
+// Fetch that rejects if the network hangs, so a stalled request falls back to
+// cache quickly instead of leaving the page spinning.
+function fetchWithTimeout(req, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(req, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
+}
+
 // Everything else: pull fresh when online, refresh the cache, fall back when offline.
 async function networkFirst(req) {
+  const isNavigation = req.mode === "navigate" || req.destination === "document";
   try {
-    const res = await fetch(req);
+    const res = await fetchWithTimeout(req, 10000);
     if (res && res.ok && req.method === "GET") {
       const copy = res.clone();
       caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
@@ -95,14 +124,15 @@ async function networkFirst(req) {
   } catch (err) {
     const cached = await caches.match(req);
     if (cached) return cached;
-    if (req.mode === "navigate" || req.destination === "document") {
+    if (isNavigation) {
       const root = await caches.match("/");
       if (root) return root;
+      return new Response(OFFLINE_HTML, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+        status: 503,
+      });
     }
-    return new Response(
-      "<!doctype html><meta charset=utf-8><title>Offline</title><body style='font-family:system-ui;padding:2rem'>You are offline and this page is not cached yet. Reconnect once, then it will work offline.</body>",
-      { headers: { "content-type": "text/html; charset=utf-8" }, status: 503 },
-    );
+    throw err;
   }
 }
 
