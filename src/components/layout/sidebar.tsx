@@ -22,7 +22,7 @@ export function Sidebar() {
   const pinRequired = useLockStore((s) => s.pinRequired);
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[260px] shrink-0 flex-col border-r border-border bg-sidebar px-4 py-5 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-[260px] shrink-0 flex-col border-r border-border bg-sidebar px-4 py-5 lg:flex print:hidden">
       <div className="px-2">
         <Link href="/" aria-label="Ledgerly home">
           <Brand />

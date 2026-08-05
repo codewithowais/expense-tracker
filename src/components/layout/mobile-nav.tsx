@@ -21,7 +21,7 @@ export function MobileNav() {
   const right = MOBILE_NAV.slice(2);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden print:hidden">
       <div className="mx-auto grid max-w-md grid-cols-5 items-center px-2">
         {left.map((item) => (
           <NavButton key={item.href} item={item} active={isActive(pathname, item.href)} />
@@ -31,8 +31,7 @@ export function MobileNav() {
             type="button"
             onClick={() => openCreate()}
             aria-label="Add transaction"
-            className="grid size-13 -translate-y-3 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform active:scale-95"
-            style={{ width: "3.25rem", height: "3.25rem" }}
+            className="grid size-13 -translate-y-3 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:-translate-y-3.5 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <Plus className="size-6" />
           </button>
@@ -57,11 +56,18 @@ function NavButton({
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex flex-col items-center gap-1 py-2.5 text-[0.68rem] font-medium transition-colors",
-        active ? "text-primary" : "text-muted-foreground",
+        "flex flex-col items-center gap-1 py-2.5 text-[0.68rem] font-medium transition-colors focus-visible:outline-none",
+        active ? "text-primary" : "text-muted-foreground hover:text-foreground",
       )}
     >
-      <item.icon className={cn("size-[1.35rem]", active && "fill-primary/10")} />
+      <span
+        className={cn(
+          "grid h-7 w-11 place-items-center rounded-full transition-colors",
+          active && "bg-primary/10",
+        )}
+      >
+        <item.icon className={cn("size-[1.35rem]", active && "fill-primary/10")} />
+      </span>
       {item.label}
     </Link>
   );

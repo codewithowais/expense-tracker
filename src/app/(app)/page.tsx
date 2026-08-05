@@ -280,7 +280,14 @@ export default function DashboardPage() {
                     <span>Overall progress</span>
                     <span className="tabular-nums">{Math.round(savings.overallPct)}%</span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    role="progressbar"
+                    aria-valuenow={Math.round(Math.min(100, savings.overallPct))}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Overall savings progress"
+                    className="h-2 overflow-hidden rounded-full bg-muted"
+                  >
                     <div
                       className="h-full rounded-full bg-income transition-all"
                       style={{ width: `${Math.min(100, savings.overallPct)}%` }}
@@ -308,7 +315,14 @@ export default function DashboardPage() {
                           <Money amount={b.spent} /> / <Money amount={b.limit} />
                         </span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        role="progressbar"
+                        aria-valuenow={Math.round(Math.min(100, b.pct))}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${b.label} budget usage`}
+                        className="h-2 overflow-hidden rounded-full bg-muted"
+                      >
                         <div
                           className={cn(
                             "h-full rounded-full transition-all",

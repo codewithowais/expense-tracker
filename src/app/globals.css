@@ -228,6 +228,28 @@
   box-shadow: var(--shadow-soft);
 }
 
+/* Clickable card/tile: a restrained lift on hover and a consistent focus ring
+   (matches the Button focus treatment). Reduced-motion users get the same end
+   states without the transition, thanks to the media query below. */
+@utility card-interactive {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--foreground) 16%, transparent);
+    box-shadow: var(--shadow-lift);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

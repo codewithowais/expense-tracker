@@ -107,7 +107,7 @@ export default function PeoplePage() {
                 key={person.id}
                 type="button"
                 onClick={() => setSelectedPersonId(person.id)}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="card-interactive flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-accent/40"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
                   {person.name.charAt(0).toUpperCase()}

@@ -102,7 +102,7 @@ export default function SavingsPage() {
                   key={goal.id}
                   type="button"
                   onClick={() => setSelectedGoalId(goal.id)}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="card-interactive flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-accent/40"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-3">

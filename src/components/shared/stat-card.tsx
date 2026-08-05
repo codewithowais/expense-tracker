@@ -35,10 +35,10 @@ export function StatCard({
 
   return (
     <Card className={cn("card-elevated gap-0 p-5", className)}>
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-sm font-medium text-muted-foreground">{label}</span>
         <span
-          className="grid size-9 place-items-center rounded-xl"
+          className="grid size-9 shrink-0 place-items-center rounded-xl"
           style={{
             backgroundColor: `color-mix(in oklab, var(--${accent}) 15%, transparent)`,
             color: `var(--${accent})`,
@@ -47,7 +47,7 @@ export function StatCard({
           <Icon className="size-[1.05rem]" aria-hidden />
         </span>
       </div>
-      <div className="mt-3 font-heading text-2xl font-semibold tracking-tight tabular-nums sm:text-[1.7rem]">
+      <div className="mt-3 font-heading text-2xl font-semibold leading-tight tracking-tight break-words tabular-nums sm:text-[1.7rem]">
         {value}
       </div>
       <div className="mt-2 flex items-center gap-2 text-xs">

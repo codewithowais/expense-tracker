@@ -19,9 +19,9 @@ export function BalanceHero({ totals, periodLabel }: { totals: Totals; periodLab
       className="surface-hero surface-grain relative overflow-hidden rounded-3xl p-6 sm:p-8"
     >
       <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium text-white/70">Net balance · {periodLabel}</p>
-          <p className="mt-2 font-heading text-4xl font-semibold tracking-tight text-white tabular-nums sm:text-5xl">
+          <p className="mt-2 font-heading text-4xl font-semibold tracking-tight break-words text-white tabular-nums sm:text-5xl">
             {positive ? "" : "−"}
             {fmt(Math.abs(totals.net))}
           </p>

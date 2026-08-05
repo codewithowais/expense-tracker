@@ -215,7 +215,7 @@ function PreferencesSection({
           <div
             role="radiogroup"
             aria-label="Theme"
-            className="inline-flex w-full flex-wrap gap-1 rounded-lg border border-border p-1 sm:w-auto"
+            className="inline-flex w-full flex-wrap gap-1 rounded-xl bg-muted p-1 sm:w-auto"
           >
             {THEME_OPTIONS.map((opt) => {
               const isActive = activeTheme === opt.value;
@@ -228,10 +228,10 @@ function PreferencesSection({
                   aria-checked={isActive}
                   onClick={() => setTheme(opt.value)}
                   className={cn(
-                    "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors sm:flex-none",
+                    "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all sm:flex-none",
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <Icon className="size-4" aria-hidden />

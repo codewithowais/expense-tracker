@@ -39,9 +39,10 @@ export function SectionCard({
             (href ? (
               <Link
                 href={href}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="group inline-flex shrink-0 items-center gap-1 rounded-md text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
-                {hrefLabel} <ArrowRight className="size-3.5" />
+                {hrefLabel}{" "}
+                <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
               </Link>
             ) : null)}
         </div>

@@ -31,7 +31,7 @@ export function Topbar() {
   const pinRequired = useLockStore((s) => s.pinRequired);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:justify-end">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:justify-end print:hidden">
       {/* Mobile brand + menu */}
       <div className="flex items-center gap-2 lg:hidden">
         <Sheet open={open} onOpenChange={setOpen}>
@@ -61,13 +61,18 @@ export function Topbar() {
                             onClick={() => setOpen(false)}
                             aria-current={active ? "page" : undefined}
                             className={cn(
-                              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
+                              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                               active
                                 ? "bg-accent text-accent-foreground"
                                 : "text-foreground/80 hover:bg-accent/60",
                             )}
                           >
-                            <item.icon className="size-[1.15rem] text-muted-foreground" />
+                            <item.icon
+                              className={cn(
+                                "size-[1.15rem]",
+                                active ? "text-primary" : "text-muted-foreground",
+                              )}
+                            />
                             {item.label}
                           </Link>
                         </li>
