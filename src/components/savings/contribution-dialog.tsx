@@ -41,6 +41,8 @@ interface ContributionDialogProps {
   contribution?: SavingsContribution;
   /** Lock the goal to this id and hide the goal picker. */
   presetGoalId?: string;
+  /** Preselect Add vs Withdraw when creating a new entry. */
+  initialMode?: ContributionMode;
 }
 
 function fieldError(msg?: string) {
@@ -53,15 +55,17 @@ export function ContributionDialog({
   onOpenChange,
   contribution,
   presetGoalId,
+  initialMode,
 }: ContributionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
         {open ? (
           <ContributionDialogForm
-            key={`${contribution?.id ?? "new"}-${presetGoalId ?? ""}`}
+            key={`${contribution?.id ?? "new"}-${presetGoalId ?? ""}-${initialMode ?? ""}`}
             contribution={contribution}
             presetGoalId={presetGoalId}
+            initialMode={initialMode}
             onDone={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
           />
@@ -74,6 +78,7 @@ export function ContributionDialog({
 interface ContributionDialogFormProps {
   contribution?: SavingsContribution;
   presetGoalId?: string;
+  initialMode?: ContributionMode;
   onDone: () => void;
   onCancel: () => void;
 }
@@ -81,6 +86,7 @@ interface ContributionDialogFormProps {
 function ContributionDialogForm({
   contribution,
   presetGoalId,
+  initialMode,
   onDone,
   onCancel,
 }: ContributionDialogFormProps) {
@@ -90,7 +96,7 @@ function ContributionDialogForm({
   const showGoalField = !presetGoalId;
 
   const [mode, setMode] = useState<ContributionMode>(
-    contribution && contribution.amount < 0 ? "withdraw" : "add",
+    contribution ? (contribution.amount < 0 ? "withdraw" : "add") : (initialMode ?? "add"),
   );
 
   const goalOptions = useMemo(() => goals ?? [], [goals]);
@@ -251,6 +257,7 @@ function ContributionDialogForm({
                 value={field.value}
                 onChange={field.onChange}
                 disableFuture
+                aria-invalid={!!errors.date}
               />
             )}
           />

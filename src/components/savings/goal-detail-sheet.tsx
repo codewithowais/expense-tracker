@@ -52,6 +52,7 @@ export function GoalDetailSheet({ goalId, onOpenChange }: GoalDetailSheetProps) 
   const [deleteGoalOpen, setDeleteGoalOpen] = useState(false);
   const [contributionDialog, setContributionDialog] = useState<{
     contribution?: SavingsContribution;
+    mode?: "add" | "withdraw";
   } | null>(null);
   const [pendingDeleteContribution, setPendingDeleteContribution] =
     useState<SavingsContribution | null>(null);
@@ -168,7 +169,7 @@ export function GoalDetailSheet({ goalId, onOpenChange }: GoalDetailSheetProps) 
                   <Button
                     size="sm"
                     className="gap-2"
-                    onClick={() => setContributionDialog({})}
+                    onClick={() => setContributionDialog({ mode: "add" })}
                   >
                     <ArrowUpCircle className="size-4" /> Add contribution
                   </Button>
@@ -176,7 +177,7 @@ export function GoalDetailSheet({ goalId, onOpenChange }: GoalDetailSheetProps) 
                     variant="outline"
                     size="sm"
                     className="gap-2"
-                    onClick={() => setContributionDialog({})}
+                    onClick={() => setContributionDialog({ mode: "withdraw" })}
                   >
                     <ArrowDownCircle className="size-4" /> Withdraw
                   </Button>
@@ -259,6 +260,7 @@ export function GoalDetailSheet({ goalId, onOpenChange }: GoalDetailSheetProps) 
           onOpenChange={(v) => !v && setContributionDialog(null)}
           contribution={contributionDialog?.contribution}
           presetGoalId={goal.id}
+          initialMode={contributionDialog?.mode}
         />
       ) : null}
 
