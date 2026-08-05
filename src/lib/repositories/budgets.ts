@@ -28,6 +28,22 @@ export const budgetRepo = {
     const db = getDB();
     const now = nowISO();
     const id = budgetId(input.scope, input.categoryId);
+
+    // Reconcile: tombstone any OTHER live budget for the same scope/category
+    // that has a different id (e.g. a legacy random-id row, or a duplicate
+    // created offline on another device). Without this, editing a pre-existing
+    // budget would write the deterministic-id row and leave the old one behind
+    // as a stale duplicate — so the edit appears not to take effect.
+    const siblings =
+      input.scope === "overall"
+        ? await db.budgets.where("scope").equals("overall").toArray()
+        : await db.budgets.where("categoryId").equals(input.categoryId ?? "").toArray();
+    for (const s of siblings) {
+      if (s.id !== id && !s.deletedAt) {
+        await db.budgets.update(s.id, { deletedAt: now, updatedAt: now });
+      }
+    }
+
     const existing = await db.budgets.get(id);
     const row: Budget = {
       id,
