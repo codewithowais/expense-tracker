@@ -10,6 +10,7 @@ import { CATEGORY_COLORS, CURRENCIES, PAYMENT_METHODS } from "@/lib/constants";
 import type {
   Budget,
   Category,
+  CurrencyCode,
   DebtEntry,
   PaymentMethod,
   Person,
@@ -144,10 +145,17 @@ export async function importBackupJSON(text: string): Promise<ImportResult> {
         await db.savingsContributions.bulkPut(stampImported(data.savingsContributions, now));
       }
       if (data.settings) {
+        // Validate the currency against known codes so a corrupted/edited or
+        // future-version backup can't write an unknown code that then crashes
+        // every money render (CURRENCIES[code] would be undefined).
+        const rawCurrency = data.settings.currency ?? "PKR";
+        const currency = (rawCurrency in CURRENCIES ? rawCurrency : "PKR") as CurrencyCode;
+        const rawDay = Number(data.settings.monthStartDay);
+        const monthStartDay = Number.isFinite(rawDay) ? Math.min(28, Math.max(1, rawDay)) : 1;
         await db.settings.update("app", {
           name: data.settings.name ?? "",
-          currency: (data.settings.currency ?? "PKR") as never,
-          monthStartDay: data.settings.monthStartDay ?? 1,
+          currency,
+          monthStartDay,
           updatedAt: now,
         });
       }
