@@ -38,18 +38,45 @@ const APP_SHELL = [
   "/settings",
 ];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    (async () => {
+// Precache the shell pages AND the JS/CSS/font assets they reference, so a
+// SINGLE online visit is enough to run fully offline afterwards. (The worker
+// can't cache assets from the very first page load — it takes control only
+// after that load's requests were already made — so we fetch them here.)
+async function precacheShell() {
+  const pageCache = await caches.open(RUNTIME_CACHE);
+  const staticCache = await caches.open(STATIC_CACHE);
+  const assetUrls = new Set();
+  const assetRe = /\\/_next\\/static\\/[^"'()\\s]+?\\.(?:js|css|woff2?)/g;
+
+  await Promise.all(
+    APP_SHELL.map(async (route) => {
       try {
-        const cache = await caches.open(RUNTIME_CACHE);
-        await cache.addAll(APP_SHELL);
+        const res = await fetch(route, { cache: "no-cache" });
+        if (!res || !res.ok) return;
+        await pageCache.put(route, res.clone());
+        const html = await res.text();
+        let m;
+        while ((m = assetRe.exec(html)) !== null) assetUrls.add(m[0]);
       } catch (err) {
-        // Best-effort: a missing route must not block installation.
+        // A missing route must not block installation.
       }
-      await self.skipWaiting();
-    })(),
+    }),
   );
+
+  await Promise.all(
+    Array.from(assetUrls).map(async (url) => {
+      try {
+        const res = await fetch(url);
+        if (res && res.ok) await staticCache.put(url, res.clone());
+      } catch (err) {
+        // Best-effort per asset.
+      }
+    }),
+  );
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(precacheShell().then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
