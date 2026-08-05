@@ -135,7 +135,13 @@ export function TransactionForm({
             control={control}
             name="date"
             render={({ field }) => (
-              <DateField id="date" value={field.value} onChange={field.onChange} disableFuture />
+              <DateField
+                id="date"
+                value={field.value}
+                onChange={field.onChange}
+                disableFuture
+                aria-invalid={!!errors.date}
+              />
             )}
           />
           {fieldError(errors.date?.message)}

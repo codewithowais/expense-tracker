@@ -73,7 +73,9 @@ export default function DashboardPage() {
 
   const current = useTransactions({ range });
   const previous = useTransactions({ range: prevRange });
-  const categories = useCategories();
+  // Include archived categories so budgets and historical transactions keep
+  // their real label/icon (matches the budgets page).
+  const categories = useCategories(true);
   const budgets = useBudgets();
   const totalCount = useTransactionCount();
 

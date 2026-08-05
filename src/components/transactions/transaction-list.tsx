@@ -155,7 +155,7 @@ function TransactionRow({ t, cat, bordered, onEdit, onDeleteRequest }: Transacti
         <button
           type="button"
           aria-expanded={expanded}
-          aria-controls={panelId}
+          aria-controls={expanded ? panelId : undefined}
           onClick={toggle}
           className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-4"
         >

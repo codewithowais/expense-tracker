@@ -15,9 +15,17 @@ interface DateFieldProps {
   id?: string;
   className?: string;
   disableFuture?: boolean;
+  "aria-invalid"?: boolean;
 }
 
-export function DateField({ value, onChange, id, className, disableFuture }: DateFieldProps) {
+export function DateField({
+  value,
+  onChange,
+  id,
+  className,
+  disableFuture,
+  "aria-invalid": ariaInvalid,
+}: DateFieldProps) {
   const [open, setOpen] = useState(false);
   const selected = value ? parseISO(value) : undefined;
 
@@ -28,6 +36,7 @@ export function DateField({ value, onChange, id, className, disableFuture }: Dat
           id={id}
           type="button"
           variant="outline"
+          aria-invalid={ariaInvalid}
           className={cn("h-11 w-full justify-start gap-2 rounded-2xl font-normal", className)}
         >
           <CalendarDays className="size-4 text-muted-foreground" />

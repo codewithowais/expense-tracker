@@ -67,7 +67,8 @@ export default function AnalyticsPage() {
   );
 
   const txs = useTransactions({ range });
-  const categories = useCategories();
+  // Include archived categories so historical breakdowns keep real labels/icons.
+  const categories = useCategories(true);
   const totalCount = useTransactionCount();
 
   const categoryMap = useMemo(
