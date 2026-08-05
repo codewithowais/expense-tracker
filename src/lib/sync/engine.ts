@@ -143,12 +143,17 @@ async function doSync(): Promise<SyncOutcome> {
     });
 
     const at = new Date().toISOString();
-    const newPullCursor = maxRemote > (pullCursor ?? "") ? maxRemote : (pullCursor ?? at);
-    // Advance the push cursor to this device's own wall clock (monotonic),
-    // never to a row/remote timestamp.
-    const newPushCursor = pushCursor && pushCursor > syncStart ? pushCursor : syncStart;
+    // Clamp the pull cursor to the server's clock: a future-dated peer record
+    // must not push `since` past real time and hide other devices' records.
+    const serverTime = data.serverTime ?? at;
+    const cappedRemote = maxRemote > serverTime ? serverTime : maxRemote;
+    const newPullCursor = cappedRemote > (pullCursor ?? "") ? cappedRemote : (pullCursor ?? serverTime);
+    // Push cursor tracks THIS device's wall clock with no monotonic guard, so a
+    // backward clock correction self-corrects on the next sync (harmless
+    // re-push of already-synced rows) instead of stranding new edits above a
+    // stale frontier.
     await metaRepo.set(SYNC_CURSOR_KEY, newPullCursor);
-    await metaRepo.set(SYNC_PUSH_CURSOR_KEY, newPushCursor);
+    await metaRepo.set(SYNC_PUSH_CURSOR_KEY, syncStart);
     await metaRepo.set(SYNC_LAST_AT_KEY, at);
 
     const pushed = changes.reduce((n, g) => n + g.records.length, 0);
