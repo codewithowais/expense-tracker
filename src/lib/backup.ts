@@ -6,7 +6,18 @@ import { nowISO } from "@/lib/crypto";
 import { parseMoneyInput } from "@/lib/format";
 import { toCSV, parseCSV } from "@/lib/csv";
 import { CATEGORY_COLORS, PAYMENT_METHODS } from "@/lib/constants";
-import type { Budget, Category, PaymentMethod, Transaction, TxType } from "@/lib/types";
+import type {
+  Budget,
+  Category,
+  DebtEntry,
+  PaymentMethod,
+  Person,
+  SavingsContribution,
+  SavingsGoal,
+  Syncable,
+  Transaction,
+  TxType,
+} from "@/lib/types";
 
 const BACKUP_VERSION = 1;
 
@@ -17,6 +28,10 @@ export interface Backup {
   categories: Category[];
   transactions: Transaction[];
   budgets: Budget[];
+  people: Person[];
+  debtEntries: DebtEntry[];
+  savingsGoals: SavingsGoal[];
+  savingsContributions: SavingsContribution[];
   settings: { name: string; currency: string; monthStartDay: number };
 }
 
@@ -24,10 +39,23 @@ export interface Backup {
 export async function exportBackupJSON(): Promise<string> {
   await ensureSeed();
   const db = getDB();
-  const [categories, transactions, budgets, settings] = await Promise.all([
+  const [
+    categories,
+    transactions,
+    budgets,
+    people,
+    debtEntries,
+    savingsGoals,
+    savingsContributions,
+    settings,
+  ] = await Promise.all([
     db.categories.toArray(),
     db.transactions.toArray(),
     db.budgets.toArray(),
+    db.people.toArray(),
+    db.debtEntries.toArray(),
+    db.savingsGoals.toArray(),
+    db.savingsContributions.toArray(),
     db.settings.get("app"),
   ]);
   const backup: Backup = {
@@ -37,6 +65,10 @@ export async function exportBackupJSON(): Promise<string> {
     categories,
     transactions,
     budgets,
+    people,
+    debtEntries,
+    savingsGoals,
+    savingsContributions,
     settings: {
       name: settings?.name ?? "",
       currency: settings?.currency ?? "PKR",
@@ -50,33 +82,84 @@ export interface ImportResult {
   categories: number;
   transactions: number;
   budgets: number;
+  people: number;
+  debtEntries: number;
+  savingsGoals: number;
+  savingsContributions: number;
 }
 
-/** Replace all data with the contents of a JSON backup. */
+/** Stamp imported rows as fresh local edits so they actually push on the next
+ * sync, while preserving any tombstone the backup itself recorded. */
+function stampImported<T extends Syncable>(rows: T[], at: string): T[] {
+  return rows.map((r) => ({ ...r, updatedAt: at, deletedAt: r.deletedAt ?? null }));
+}
+
+/**
+ * Replace all data with the contents of a JSON backup.
+ *
+ * Uses tombstones (never a hard `.clear()`) for existing rows: a hard delete
+ * has no `updatedAt`/`deletedAt` bump, so the very next sync would just pull
+ * the "deleted" rows back down from the cloud. Imported rows are re-stamped
+ * with a fresh `updatedAt` so they're recognized as new local changes and
+ * actually get pushed upstream.
+ */
 export async function importBackupJSON(text: string): Promise<ImportResult> {
   const data = JSON.parse(text) as Partial<Backup>;
   if (data.app !== "ledgerly" || !Array.isArray(data.transactions)) {
     throw new Error("This file isn’t a valid Ledgerly backup.");
   }
   const db = getDB();
-  await db.transaction("rw", db.categories, db.transactions, db.budgets, db.settings, async () => {
-    await Promise.all([db.categories.clear(), db.transactions.clear(), db.budgets.clear()]);
-    if (data.categories?.length) await db.categories.bulkAdd(data.categories);
-    if (data.transactions?.length) await db.transactions.bulkAdd(data.transactions);
-    if (data.budgets?.length) await db.budgets.bulkAdd(data.budgets);
-    if (data.settings) {
-      await db.settings.update("app", {
-        name: data.settings.name ?? "",
-        currency: (data.settings.currency ?? "PKR") as never,
-        monthStartDay: data.settings.monthStartDay ?? 1,
-        updatedAt: nowISO(),
-      });
-    }
-  });
+  const now = nowISO();
+  const tomb = { deletedAt: now, updatedAt: now };
+  await db.transaction(
+    "rw",
+    [
+      db.categories,
+      db.transactions,
+      db.budgets,
+      db.people,
+      db.debtEntries,
+      db.savingsGoals,
+      db.savingsContributions,
+      db.settings,
+    ],
+    async () => {
+      await Promise.all([
+        db.categories.filter((r) => !r.deletedAt).modify(tomb),
+        db.transactions.filter((r) => !r.deletedAt).modify(tomb),
+        db.budgets.filter((r) => !r.deletedAt).modify(tomb),
+        db.people.filter((r) => !r.deletedAt).modify(tomb),
+        db.debtEntries.filter((r) => !r.deletedAt).modify(tomb),
+        db.savingsGoals.filter((r) => !r.deletedAt).modify(tomb),
+        db.savingsContributions.filter((r) => !r.deletedAt).modify(tomb),
+      ]);
+      if (data.categories?.length) await db.categories.bulkPut(stampImported(data.categories, now));
+      if (data.transactions?.length) await db.transactions.bulkPut(stampImported(data.transactions, now));
+      if (data.budgets?.length) await db.budgets.bulkPut(stampImported(data.budgets, now));
+      if (data.people?.length) await db.people.bulkPut(stampImported(data.people, now));
+      if (data.debtEntries?.length) await db.debtEntries.bulkPut(stampImported(data.debtEntries, now));
+      if (data.savingsGoals?.length) await db.savingsGoals.bulkPut(stampImported(data.savingsGoals, now));
+      if (data.savingsContributions?.length) {
+        await db.savingsContributions.bulkPut(stampImported(data.savingsContributions, now));
+      }
+      if (data.settings) {
+        await db.settings.update("app", {
+          name: data.settings.name ?? "",
+          currency: (data.settings.currency ?? "PKR") as never,
+          monthStartDay: data.settings.monthStartDay ?? 1,
+          updatedAt: now,
+        });
+      }
+    },
+  );
   return {
     categories: data.categories?.length ?? 0,
     transactions: data.transactions.length,
     budgets: data.budgets?.length ?? 0,
+    people: data.people?.length ?? 0,
+    debtEntries: data.debtEntries?.length ?? 0,
+    savingsGoals: data.savingsGoals?.length ?? 0,
+    savingsContributions: data.savingsContributions?.length ?? 0,
   };
 }
 
