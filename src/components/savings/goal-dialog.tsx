@@ -63,11 +63,13 @@ export function GoalDialog({ open, onOpenChange, goal }: GoalDialogProps) {
     defaultValues: defaultsFor(goal),
   });
 
-  // Reset the form whenever the dialog opens or the target goal changes.
+  // Reset only when the dialog opens or the *target* changes (keyed by id) —
+  // NOT on every `goal` object identity change (a background sync pull or any
+  // write re-emits new object refs and would wipe the user's in-progress edits).
   useEffect(() => {
     if (open) reset(defaultsFor(goal));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, goal]);
+  }, [open, goal?.id]);
 
   const name = useWatch({ control, name: "name" });
   const color = useWatch({ control, name: "color" });

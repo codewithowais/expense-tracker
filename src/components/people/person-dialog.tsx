@@ -53,11 +53,14 @@ export function PersonDialog({ open, onOpenChange, person }: PersonDialogProps) 
     defaultValues: defaultsFor(person),
   });
 
-  // Reset the form whenever the dialog opens or the target person changes.
+  // Reset only when the dialog opens or the *target* changes (keyed by id) —
+  // NOT on every `person` object identity change. `usePeople()` re-emits a new
+  // array (new object refs) on any write to the table, incl. a background sync
+  // pull; depending on the object would wipe whatever the user is typing.
   useEffect(() => {
     if (open) reset(defaultsFor(person));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, person]);
+  }, [open, person?.id]);
 
   async function onSubmit(values: PersonFormValues) {
     try {
