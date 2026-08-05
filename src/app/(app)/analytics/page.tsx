@@ -91,7 +91,12 @@ export default function AnalyticsPage() {
     const topExpenses = topTransactions(txs, "expense", 5);
     const topIncome = topTransactions(txs, "income", 5);
 
-    const days = rangeDays(range);
+    // Average over the actual span of recorded data, not the raw preset window
+    // (otherwise "All time" divides by ~20,000 days back to 1970).
+    const txDates = txs.map((tx) => tx.date).sort();
+    const days = txDates.length
+      ? rangeDays({ start: txDates[0], end: txDates[txDates.length - 1] })
+      : 0;
     const avgDailySpend = days > 0 ? t.expense / days : 0;
 
     const monthCounts = new Map<string, number>();
