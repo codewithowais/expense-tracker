@@ -228,7 +228,7 @@ function PreferencesSection({
                   aria-checked={isActive}
                   onClick={() => setTheme(opt.value)}
                   className={cn(
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors sm:flex-none",
+                    "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors sm:flex-none",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",

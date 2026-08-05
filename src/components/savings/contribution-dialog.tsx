@@ -202,7 +202,7 @@ function ContributionDialogForm({
               aria-checked={mode === "add"}
               onClick={() => setMode("add")}
               className={cn(
-                "flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
+                "flex min-h-11 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
                 mode === "add"
                   ? "bg-income-soft text-income shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -216,7 +216,7 @@ function ContributionDialogForm({
               aria-checked={mode === "withdraw"}
               onClick={() => setMode("withdraw")}
               className={cn(
-                "flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
+                "flex min-h-11 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
                 mode === "withdraw"
                   ? "bg-expense-soft text-expense shadow-sm"
                   : "text-muted-foreground hover:text-foreground",

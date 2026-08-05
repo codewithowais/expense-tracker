@@ -143,7 +143,7 @@ export function FilterBar({ value, onChange, className }: FilterBarProps) {
           </div>
 
           <Tabs value={value.type} onValueChange={(v) => handleTypeChange(v as TxTypeFilter)}>
-            <TabsList aria-label="Filter by transaction type">
+            <TabsList aria-label="Filter by transaction type" className="!h-11 w-full sm:w-auto">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="income">Income</TabsTrigger>
               <TabsTrigger value="expense">Expense</TabsTrigger>

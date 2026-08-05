@@ -111,8 +111,8 @@ export function GoalDetailSheet({ goalId, onOpenChange }: GoalDetailSheetProps) 
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0 rounded-lg text-muted-foreground"
+                        size="icon-sm"
+                        className="shrink-0 text-muted-foreground"
                         aria-label="Goal actions"
                       >
                         <MoreHorizontal className="size-4" />
@@ -221,8 +221,8 @@ export function GoalDetailSheet({ goalId, onOpenChange }: GoalDetailSheetProps) 
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="size-8 shrink-0 rounded-lg text-muted-foreground"
+                              size="icon-sm"
+                              className="shrink-0 text-muted-foreground"
                               aria-label="Contribution actions"
                             >
                               <MoreHorizontal className="size-4" />

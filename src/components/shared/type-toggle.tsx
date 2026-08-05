@@ -24,7 +24,7 @@ export function TypeToggle({ value, onChange, className }: TypeToggleProps) {
         aria-checked={value === "expense"}
         onClick={() => onChange("expense")}
         className={cn(
-          "flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
+          "flex min-h-11 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
           value === "expense"
             ? "bg-expense-soft text-expense shadow-sm"
             : "text-muted-foreground hover:text-foreground",
@@ -38,7 +38,7 @@ export function TypeToggle({ value, onChange, className }: TypeToggleProps) {
         aria-checked={value === "income"}
         onClick={() => onChange("income")}
         className={cn(
-          "flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
+          "flex min-h-11 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
           value === "income"
             ? "bg-income-soft text-income shadow-sm"
             : "text-muted-foreground hover:text-foreground",

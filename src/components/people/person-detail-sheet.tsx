@@ -100,8 +100,8 @@ export function PersonDetailSheet({ personId, onOpenChange }: PersonDetailSheetP
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0 rounded-lg text-muted-foreground"
+                        size="icon-sm"
+                        className="shrink-0 text-muted-foreground"
                         aria-label="Person actions"
                       >
                         <MoreHorizontal className="size-4" />
@@ -192,8 +192,8 @@ export function PersonDetailSheet({ personId, onOpenChange }: PersonDetailSheetP
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="size-8 shrink-0 rounded-lg text-muted-foreground"
+                              size="icon-sm"
+                              className="shrink-0 text-muted-foreground"
                               aria-label="Entry actions"
                             >
                               <MoreHorizontal className="size-4" />

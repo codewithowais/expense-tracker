@@ -170,7 +170,7 @@ function BudgetDialogForm({ budget, onDone, onCancel }: BudgetDialogFormProps) {
               >
                 <label
                   className={cn(
-                    "flex items-center gap-2.5 rounded-2xl border border-input px-3 py-2.5 text-sm transition-colors",
+                    "flex min-h-11 items-center gap-2.5 rounded-2xl border border-input px-3 py-2.5 text-sm transition-colors",
                     field.value === "overall" ? "border-primary bg-accent" : "cursor-pointer",
                     hasOtherOverall && "cursor-not-allowed opacity-50",
                   )}
@@ -185,7 +185,7 @@ function BudgetDialogForm({ budget, onDone, onCancel }: BudgetDialogFormProps) {
                 </label>
                 <label
                   className={cn(
-                    "flex items-center gap-2.5 rounded-2xl border border-input px-3 py-2.5 text-sm transition-colors",
+                    "flex min-h-11 items-center gap-2.5 rounded-2xl border border-input px-3 py-2.5 text-sm transition-colors",
                     field.value === "category" ? "border-primary bg-accent" : "cursor-pointer",
                     categoryScopeDisabled && "cursor-not-allowed opacity-50",
                   )}

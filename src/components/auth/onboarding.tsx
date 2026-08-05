@@ -59,7 +59,7 @@ export function Onboarding() {
                 </p>
               </header>
               <div className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="name">What should we call you?</Label>
                   <Input
                     id="name"
@@ -70,7 +70,7 @@ export function Onboarding() {
                     autoFocus
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="currency">Primary currency</Label>
                   <Select value={currency} onValueChange={(v) => setCurrency(v as CurrencyCode)}>
                     <SelectTrigger id="currency" className="w-full">

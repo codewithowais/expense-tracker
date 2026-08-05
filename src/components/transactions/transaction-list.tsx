@@ -181,8 +181,8 @@ function TransactionRow({ t, cat, bordered, onEdit, onDeleteRequest }: Transacti
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className="mr-1 size-8 shrink-0 rounded-lg text-muted-foreground"
+              size="icon-sm"
+              className="mr-1 shrink-0 text-muted-foreground"
               aria-label="Transaction actions"
             >
               <MoreHorizontal className="size-4" />
