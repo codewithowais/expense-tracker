@@ -11,15 +11,21 @@ export function LockScreen({ name }: { name?: string }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const unlock = useLockStore((s) => s.unlock);
 
   async function attempt(candidate: string) {
     setChecking(true);
-    const ok = await verifyAppPin(candidate);
+    setNotice(null);
+    const { ok, reason } = await verifyAppPin(candidate);
     if (ok) {
       unlock();
     } else {
       setError(true);
+      if (reason === "offline-no-cache") {
+        // Genuinely can't verify: offline and this device has never unlocked online.
+        setNotice("Can’t verify offline yet. Connect to the internet once to unlock this device.");
+      }
       setTimeout(() => {
         setError(false);
         setPin("");
@@ -46,6 +52,11 @@ export function LockScreen({ name }: { name?: string }) {
             disabled={checking}
           />
         </div>
+        {notice ? (
+          <p role="alert" className="mt-5 max-w-xs text-center text-sm text-white/70">
+            {notice}
+          </p>
+        ) : null}
       </div>
     </div>
   );
