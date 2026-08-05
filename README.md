@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ledgerly — Personal Finance Tracker
 
-## Getting Started
+A calm, premium, **local-first** expense tracker. Track income and spending, lend and borrow, set budgets and savings goals, and see where your money goes — stored privately in your browser, with **optional two-way sync** to your own Neon database so mobile and web stay in step.
 
-First, run the development server:
+## Features
+
+- **Dashboard** — net balance, savings rate, cash-flow trend, spending breakdown, budgets, people & debts, savings goals, and recent activity for any month.
+- **Income & Expense management** — focused views per ledger side with breakdowns and trends.
+- **Transactions** — a fast, searchable, filterable ledger (by text, type, category, method, amount, period) with inline edit/delete + undo.
+- **Categories** — create, edit, recolor, re-icon, archive, and safely delete (with transaction reassignment).
+- **Budgets** — monthly limits (overall and per-category) with live progress and over-/near-limit warnings.
+- **People & Debts** — track money you lent to or borrowed from individuals, with repayments and per-person balances. Kept separate from spending.
+- **Savings Goals** — set targets, log contributions/withdrawals, and watch progress toward each goal.
+- **Analytics** — income vs. expense trends, category donuts, payment-method breakdown, largest transactions, and auto-generated insights.
+- **Reports** — a clean, printable summary for any period with period-scoped CSV export.
+- **Settings** — profile, currency, salary-cycle month start, theme, cloud sync, and full data import/export.
+- **Data import/export** — JSON backup/restore and CSV transactions import/export.
+- **App lock (PIN)** — a mandatory 4-digit PIN, configured via the `APP_PIN` environment variable and validated on the server, so it's the same on every device.
+- **Cloud sync (optional)** — two-way, last-write-wins sync to your own Neon Postgres. Auto-syncs when online; works fully offline otherwise.
+
+Every screen ships **loading, empty, success, and error** states, is fully **responsive**, **accessible**, and supports **light + dark** themes.
+
+## Tech stack
+
+- **Next.js 16** (App Router, typed routes) · **React 19** · **TypeScript** (strict)
+- **Tailwind CSS v4** + **shadcn/ui** (Radix)
+- **Dexie** (IndexedDB) for local-first persistence · **`@neondatabase/serverless`** for sync
+- **Zustand** (UI/lock/sync state) · **dexie-react-hooks** (reactive queries)
+- **Recharts 3** · **Motion** · **date-fns**
+- **react-hook-form** + **Zod** · **Sonner** (toasts) · **next-themes**
+- **Vitest** (unit tests)
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env   # then edit .env
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. On first run you'll be guided through a short setup (name, currency, optional sample data).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment (`.env`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+| --- | --- |
+| `APP_PIN` | 4-digit app-lock PIN, validated server-side. Same on every device; change it here and restart/redeploy. Leave blank to disable the lock. |
+| `DATABASE_URL` | Neon Postgres connection string for cloud sync (`npx neonctl@latest init`). Leave blank to run fully offline. |
+| `SYNC_SECRET` / `NEXT_PUBLIC_SYNC_TOKEN` | Optional shared secret to protect the sync endpoint. |
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev        # start the dev server
+npm run build      # production build
+npm run typecheck  # tsc --noEmit
+npm run lint       # eslint
+npm run test       # vitest (money / analytics / dates / debts / savings / csv logic)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Data is **local-first**: everything lives in IndexedDB via a single typed Dexie instance, accessed **only** through repositories (`src/lib/repositories/*`). The UI reads reactively via hooks in `src/lib/hooks/use-data.ts`, so any mutation instantly refreshes every view. When `DATABASE_URL` is set, a background sync engine mirrors changes to Neon using soft-delete tombstones and last-write-wins.
 
-## Deploy on Vercel
+```
+src/
+  app/(app)/        # authed shell + feature routes
+  app/api/          # sync + lock server routes (Neon, APP_PIN)
+  components/
+    auth/           # onboarding, PIN pad, lock screen, gate
+    layout/         # sidebar, topbar, mobile nav, brand
+    shared/         # PageHeader, SectionCard, StatCard, Money, states…
+    transactions/ charts/ categories/ budgets/ money/
+    people/ savings/ reports/ settings/ sync/
+    ui/             # shadcn primitives
+  lib/
+    db/             # Dexie schema + seed
+    repositories/   # settings, categories, transactions, budgets, people, savings, meta
+    sync/           # sync engine + types
+    server/         # server-only Neon client
+    analytics.ts debts.ts savings.ts   # pure derivations
+    dates.ts format.ts crypto.ts backup.ts csv.ts schemas.ts auth-client.ts
+  stores/           # zustand (lock, quick-add, sync)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Money is stored in major units; aggregation is float-safe (`sumMoney`). See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full component and API surface.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Privacy
+
+All data lives in your browser by default. Cloud sync is **opt-in** and goes only to **your own** Neon database via server-side API routes — the connection string is never exposed to the browser. Use **Settings → Data** to export a backup, and **Settings → Cloud sync** to enable syncing across devices.
