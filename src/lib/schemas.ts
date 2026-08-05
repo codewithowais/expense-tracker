@@ -29,7 +29,10 @@ export type CategoryFormValues = z.infer<typeof categorySchema>;
 export const budgetSchema = z.object({
   scope: z.enum(["overall", "category"]),
   categoryId: z.string().nullable(),
-  amount: z.number().positive("Set a limit greater than zero"),
+  amount: z
+    .number()
+    .positive("Set a limit greater than zero")
+    .max(1_000_000_000, "That amount looks too large"),
 });
 
 export type BudgetFormValues = z.infer<typeof budgetSchema>;

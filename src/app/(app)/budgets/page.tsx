@@ -49,10 +49,17 @@ export default function BudgetsPage() {
     [rows],
   );
 
-  const expenseCategoryCount = useMemo(
-    () => (categories ?? []).filter((c) => c.type === "expense").length,
-    [categories],
-  );
+  // How many ACTIVE (non-archived) expense categories still have no budget —
+  // this mirrors exactly what the budget dialog's category picker can offer, so
+  // the "New budget" button never opens a dead-end dialog.
+  const availableCategoryCount = useMemo(() => {
+    const budgeted = new Set(
+      (budgets ?? []).filter((b) => b.scope === "category").map((b) => b.categoryId),
+    );
+    return (categories ?? []).filter(
+      (c) => c.type === "expense" && !c.archived && !budgeted.has(c.id),
+    ).length;
+  }, [categories, budgets]);
 
   const overCount = rows?.filter((r) => r.status === "over").length ?? 0;
   const nearCount = rows?.filter((r) => r.status === "warning").length ?? 0;
@@ -61,7 +68,7 @@ export default function BudgetsPage() {
   const totalSpent = overallRow ? overallRow.spent : sumMoney(categoryRows.map((r) => r.spent));
   const spentPct = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
 
-  const canAddCategoryBudget = categoryRows.length < expenseCategoryCount;
+  const canAddCategoryBudget = availableCategoryCount > 0;
   const canCreateBudget = !overallRow || canAddCategoryBudget;
 
   function openCreate() {

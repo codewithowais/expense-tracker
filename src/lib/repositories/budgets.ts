@@ -45,9 +45,6 @@ export const budgetRepo = {
     const toRetire = new Set(siblings.filter((s) => !s.deletedAt).map((s) => s.id));
     if (previousId) toRetire.add(previousId);
     toRetire.delete(id);
-    for (const staleId of toRetire) {
-      await db.budgets.update(staleId, { deletedAt: now, updatedAt: now });
-    }
 
     const existing = await db.budgets.get(id);
     const row: Budget = {
@@ -59,7 +56,13 @@ export const budgetRepo = {
       updatedAt: now,
       deletedAt: null,
     };
-    await db.budgets.put(row);
+    // Retire stale rows and write the canonical row atomically.
+    await db.transaction("rw", db.budgets, async () => {
+      for (const staleId of toRetire) {
+        await db.budgets.update(staleId, { deletedAt: now, updatedAt: now });
+      }
+      await db.budgets.put(row);
+    });
     return row;
   },
 
