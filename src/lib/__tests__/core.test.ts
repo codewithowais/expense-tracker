@@ -72,6 +72,19 @@ describe("money math", () => {
     expect(parseMoneyInput("abc")).toBeNull();
   });
 
+  it("rejects garbage instead of returning a wrong number", () => {
+    // Regression: these previously mis-parsed to 15 and 5,000,000,000.
+    expect(parseMoneyInput("1e5")).toBeNull();
+    expect(parseMoneyInput("5abc")).toBeNull();
+    expect(parseMoneyInput("1.2.3")).toBeNull();
+    expect(parseMoneyInput("$5b")).toBe(5_000_000_000); // legit suffix still works
+  });
+
+  it("rounds to the currency's decimal precision", () => {
+    expect(parseMoneyInput("100.55", 0)).toBe(101); // PKR (0 decimals)
+    expect(parseMoneyInput("100.55", 2)).toBe(100.55);
+  });
+
   it("formats percentages", () => {
     expect(formatPercent(42.4)).toBe("42%");
     expect(formatPercent(42.45, 1)).toBe("42.5%");
@@ -89,6 +102,13 @@ describe("date ranges", () => {
     const r = monthRange(new Date(2024, 5, 10), 25);
     expect(r.start).toBe("2024-05-25");
     expect(r.end).toBe("2024-06-24");
+  });
+
+  it("clamps monthStartDay to avoid month overflow", () => {
+    // Regression: day 31 in a short month must not roll Date into the next month.
+    const r = monthRange(new Date(2024, 1, 10), 31);
+    expect(r.start).toBe("2024-01-28"); // clamped to 28th
+    expect(r.end).toBe("2024-02-27");
   });
 
   it("shifts months", () => {
@@ -236,6 +256,11 @@ describe("savings goals", () => {
 
   it("sums contributions net of withdrawals", () => {
     expect(savedForGoal([contrib("g", 120000), contrib("g", 30000), contrib("g", -20000)])).toBe(130000);
+  });
+
+  it("floors overall progress at 0 when withdrawals exceed deposits", () => {
+    const { overallPct } = summarizeGoals([goal("g", 1000)], [contrib("g", 200), contrib("g", -500)]);
+    expect(overallPct).toBe(0);
   });
 
   it("computes progress and clamps percentage", () => {
