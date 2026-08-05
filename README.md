@@ -48,6 +48,19 @@ Open http://localhost:3000. On first run you'll be guided through a short setup 
 | `DATABASE_URL` | Neon Postgres connection string for cloud sync (`npx neonctl@latest init`). Leave blank to run fully offline. |
 | `SYNC_SECRET` / `NEXT_PUBLIC_SYNC_TOKEN` | Optional shared secret to protect the sync endpoint. |
 
+## Deploy to Vercel
+
+Ledgerly is a standard Next.js App Router app and deploys to Vercel with **zero extra config** (no `vercel.json` needed).
+
+1. Push this repo to GitHub and **Import** it in Vercel (framework auto-detected as Next.js).
+2. In **Project → Settings → Environment Variables**, add the variables from the table above for the **Production** (and **Preview**) environments. The local `.env` is git-ignored and is **not** uploaded, so these must be set in the dashboard:
+   - `APP_PIN` — **required for the lock.** If it's unset, the app deploys with **no PIN lock**.
+   - `DATABASE_URL` — use the **pooled** Neon connection string. If unset, the app still runs fully offline and cloud sync returns `503`.
+   - `SYNC_SECRET` + `NEXT_PUBLIC_SYNC_TOKEN` — optional; if you set one, set **both** to the same value.
+3. Deploy. Changing any env var later requires a **redeploy** to take effect.
+
+> **Security:** treat `DATABASE_URL` as a secret. Never commit it — keep it only in `.env` (local) and the Vercel dashboard. If a connection string is ever exposed, rotate the password in the Neon console.
+
 ## Scripts
 
 ```bash
