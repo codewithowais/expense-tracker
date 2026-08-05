@@ -31,6 +31,16 @@ export const metadata: Metadata = {
   description:
     "A calm, premium expense tracker. Track income and spending, set budgets, and see where your money goes.",
   applicationName: "Ledgerly",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Ledgerly",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export const viewport: Viewport = {

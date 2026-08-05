@@ -1,0 +1,19 @@
+{
+  "name": "Ledgerly — Personal Finance",
+  "short_name": "Ledgerly",
+  "description": "A calm, local-first expense tracker. Works offline; your data stays in your browser.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f6f1",
+  "theme_color": "#1c1b19",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

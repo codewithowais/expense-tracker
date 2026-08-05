@@ -61,6 +61,17 @@ Ledgerly is a standard Next.js App Router app and deploys to Vercel with **zero 
 
 > **Security:** treat `DATABASE_URL` as a secret. Never commit it — keep it only in `.env` (local) and the Vercel dashboard. If a connection string is ever exposed, rotate the password in the Neon console.
 
+## Offline & installable (PWA)
+
+Ledgerly ships a service worker ([`src/app/sw.js/route.ts`](src/app/sw.js/route.ts)) and a web manifest, so it installs as an app and keeps working with no connection:
+
+- **Online:** pages and assets are fetched from the server (network-first) and written back to the cache, so you always get the latest version — no per-deploy cache-busting needed.
+- **Offline:** the same requests fall back to the cache, so the app still opens and runs. Immutable build assets (`/_next/static/*`, including fonts) are served cache-first, so nothing is re-downloaded needlessly.
+- **Writes made offline** are saved straight to IndexedDB (the local source of truth) and **queued for sync**; when connectivity returns, `SyncProvider` pushes them to Neon automatically (also on tab refocus and a periodic safety net).
+- The API routes (`/api/lock`, `/api/sync`) are never cached — they always hit the network and fail gracefully when offline.
+
+The worker registers in **production only** (it would fight Turbopack HMR in `next dev`), so test it with `npm run build && npx next start`.
+
 ## Scripts
 
 ```bash
