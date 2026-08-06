@@ -17,20 +17,23 @@ import {
 import { CURRENCY_LIST } from "@/lib/constants";
 import { settingsRepo } from "@/lib/repositories/settings";
 import { generateDemoData } from "@/lib/db/seed";
+import { setAppPin } from "@/lib/auth-client";
 import type { CurrencyCode } from "@/lib/types";
 
-type Step = "welcome" | "data";
+type Step = "welcome" | "security" | "data";
 
 export function Onboarding() {
   const [step, setStep] = useState<Step>("welcome");
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState<CurrencyCode>("PKR");
+  const [pin, setPin] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function finish(withDemo: boolean) {
     setSaving(true);
     try {
       await settingsRepo.update({ name: name.trim(), currency, hasCompletedSetup: true });
+      if (pin.length === 4) await setAppPin(pin);
       if (withDemo) {
         const n = await generateDemoData();
         if (n > 0) toast.success(`Added ${n} sample transactions to explore.`);
@@ -87,9 +90,46 @@ export function Onboarding() {
                   </Select>
                 </div>
               </div>
-              <Button className="w-full gap-2" size="lg" onClick={() => setStep("data")}>
+              <Button className="w-full gap-2" size="lg" onClick={() => setStep("security")}>
                 Continue <ArrowRight className="size-4" />
               </Button>
+            </div>
+          )}
+
+          {step === "security" && (
+            <div className="space-y-6">
+              <header className="space-y-1.5 text-center">
+                <h1 className="font-heading text-2xl font-semibold">Set a quick-unlock PIN</h1>
+                <p className="text-sm text-muted-foreground">
+                  A 4-digit PIN locks the app on this device after sign-in. Optional — you can skip it.
+                </p>
+              </header>
+              <div className="space-y-1.5">
+                <Label htmlFor="pin">4-digit PIN</Label>
+                <Input
+                  id="pin"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="••••"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="text-center text-2xl tracking-[0.6em]"
+                  autoFocus
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  size="lg"
+                  className="gap-2"
+                  disabled={pin.length > 0 && pin.length < 4}
+                  onClick={() => setStep("data")}
+                >
+                  Continue <ArrowRight className="size-4" />
+                </Button>
+                <Button variant="ghost" size="lg" onClick={() => { setPin(""); setStep("data"); }}>
+                  Skip for now
+                </Button>
+              </div>
             </div>
           )}
 
@@ -127,7 +167,7 @@ export function Onboarding() {
 }
 
 function StepDots({ step }: { step: Step }) {
-  const order: Step[] = ["welcome", "data"];
+  const order: Step[] = ["welcome", "security", "data"];
   const idx = order.indexOf(step);
   return (
     <div className="mt-4 flex items-center gap-2" aria-hidden>

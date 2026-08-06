@@ -32,8 +32,9 @@ export class LedgerlyDB extends Dexie {
   savingsContributions!: EntityTable<SavingsContribution, "id">;
   meta!: EntityTable<MetaRow, "key">;
 
-  constructor() {
-    super("ledgerly");
+  constructor(namespace: string) {
+    // Per-user database so multiple accounts on one browser never share data.
+    super(`ledgerly-${namespace}`);
     this.version(1).stores({
       transactions: "id, date, type, categoryId, [type+date], createdAt",
       categories: "id, type, archived, isDefault",
@@ -60,14 +61,36 @@ export class LedgerlyDB extends Dexie {
 }
 
 let _db: LedgerlyDB | null = null;
+let _activeUserId: string | null = null;
+
+/**
+ * Point the local store at a specific signed-in user. Switching users closes
+ * the previous connection so the next getDB() opens that user's own database.
+ * Called by the app gate once the session is known.
+ */
+export function setActiveUser(userId: string | null): void {
+  if (userId === _activeUserId) return;
+  _activeUserId = userId;
+  if (_db) {
+    _db.close();
+    _db = null;
+  }
+}
+
+export function getActiveUserId(): string | null {
+  return _activeUserId;
+}
 
 /** Lazily instantiate so the class is never constructed during SSR. */
 export function getDB(): LedgerlyDB {
   if (typeof window === "undefined") {
     throw new Error("Database is only available in the browser.");
   }
+  if (!_activeUserId) {
+    throw new Error("No active user — sign in before accessing the database.");
+  }
   if (!_db) {
-    _db = new LedgerlyDB();
+    _db = new LedgerlyDB(_activeUserId);
     registerChangeHooks(_db);
   }
   return _db;

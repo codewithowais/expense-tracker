@@ -35,7 +35,29 @@ if (!url) {
 
 const pool = new Pool({ connectionString: url });
 
-const STEPS = [
+// `--fresh` performs the multi-tenant CUTOVER: it DROPS the old sync_records
+// (discarding pre-accounts data — a fresh start) and recreates it with the
+// user-scoped primary key. Better Auth tables are left untouched.
+const fresh = process.argv.includes("--fresh");
+
+const FRESH_STEPS = [
+  ["drop old sync_records (fresh start)", `DROP TABLE IF EXISTS sync_records`],
+  [
+    "create sync_records (multi-tenant)",
+    `CREATE TABLE sync_records (
+      user_id text NOT NULL,
+      collection text NOT NULL,
+      id text NOT NULL,
+      updated_at timestamptz NOT NULL,
+      deleted_at timestamptz,
+      doc jsonb NOT NULL,
+      PRIMARY KEY (user_id, collection, id)
+    )`,
+  ],
+  ["index sync_records(user_id, updated_at)", `CREATE INDEX IF NOT EXISTS sync_records_user_updated_idx ON sync_records (user_id, updated_at)`],
+];
+
+const ADDITIVE_STEPS = [
   ["add sync_records.user_id", `ALTER TABLE IF EXISTS sync_records ADD COLUMN IF NOT EXISTS user_id text`],
   ["index sync_records(user_id, updated_at)", `CREATE INDEX IF NOT EXISTS sync_records_user_updated_idx ON sync_records (user_id, updated_at)`],
   ["create signup_allowlist", `CREATE TABLE IF NOT EXISTS signup_allowlist (
@@ -54,13 +76,21 @@ const STEPS = [
     )`],
 ];
 
+// Common tables (created in both modes; the allowlist/invites steps live in
+// ADDITIVE_STEPS from index 2 onward).
+const STEPS = fresh ? [...FRESH_STEPS, ...ADDITIVE_STEPS.slice(2)] : ADDITIVE_STEPS;
+
 try {
   for (const [label, sql] of STEPS) {
     await pool.query(sql);
     console.log("✓", label);
   }
-  console.log("\n✓ App migration complete (additive, no data dropped).");
-  console.log("→ Next: create Better Auth tables with:  npx @better-auth/cli@latest migrate");
+  console.log(
+    fresh
+      ? "\n✓ Fresh-start migration complete (old sync_records dropped, multi-tenant schema created)."
+      : "\n✓ App migration complete (additive, no data dropped).",
+  );
+  console.log("→ Better Auth tables: create with  npx @better-auth/cli@latest migrate  (if not already).");
 } catch (err) {
   console.error("✗ Migration failed:", err.message);
   process.exitCode = 1;
