@@ -13,10 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { monthlySeries, type MonthlyPoint } from "@/lib/analytics";
+import { monthlySeries, yearlySeries, type MonthlyPoint } from "@/lib/analytics";
 import { periodStats } from "@/lib/reports";
 import { formatPercent } from "@/lib/format";
-import type { DateRange } from "@/lib/dates";
+import { preferYearlyBuckets, type DateRange } from "@/lib/dates";
 import type { Transaction } from "@/lib/types";
 import { ReportSection, TableFrame, FactTile } from "./report-primitives";
 
@@ -27,7 +27,9 @@ interface SummaryReportProps {
 
 export function SummaryReport({ txs, range }: SummaryReportProps) {
   const s = periodStats(txs, range);
-  const months = monthlySeries(txs, range);
+  const useYearly = preferYearlyBuckets(range);
+  const buckets = useYearly ? yearlySeries(txs, range) : monthlySeries(txs, range);
+  const bucketNoun = useYearly ? "year" : "month";
 
   return (
     <div className="space-y-8">
@@ -78,15 +80,15 @@ export function SummaryReport({ txs, range }: SummaryReportProps) {
         </div>
       </ReportSection>
 
-      <ReportSection title="Monthly breakdown">
+      <ReportSection title={useYearly ? "Yearly breakdown" : "Monthly breakdown"}>
         <TableFrame>
           <Table>
             <TableCaption className="sr-only">
-              Income, expenses, and net total for each month in the selected period
+              Income, expenses, and net total for each {bucketNoun} in the selected period
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead scope="col">Month</TableHead>
+                <TableHead scope="col">{useYearly ? "Year" : "Month"}</TableHead>
                 <TableHead scope="col" className="text-right">
                   Income
                 </TableHead>
@@ -99,14 +101,14 @@ export function SummaryReport({ txs, range }: SummaryReportProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {months.length === 0 ? (
+              {buckets.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                    No monthly data for this period.
+                    No {bucketNoun}ly data for this period.
                   </TableCell>
                 </TableRow>
               ) : (
-                months.map((m: MonthlyPoint) => (
+                buckets.map((m: MonthlyPoint) => (
                   <TableRow key={m.key}>
                     <TableCell className="font-medium">{m.label}</TableCell>
                     <TableCell className="text-right">
@@ -122,7 +124,7 @@ export function SummaryReport({ txs, range }: SummaryReportProps) {
                 ))
               )}
             </TableBody>
-            {months.length > 0 ? (
+            {buckets.length > 0 ? (
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-semibold">Total</TableCell>

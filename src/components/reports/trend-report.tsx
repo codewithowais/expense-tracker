@@ -12,8 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { dailySeries, monthlySeries, totals, type MonthlyPoint } from "@/lib/analytics";
-import { rangeDays, type DateRange } from "@/lib/dates";
+import { dailySeries, monthlySeries, yearlySeries, totals, type MonthlyPoint } from "@/lib/analytics";
+import { rangeDays, preferYearlyBuckets, type DateRange } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import type { Transaction } from "@/lib/types";
 import { ReportSection, TableFrame } from "./report-primitives";
@@ -28,8 +28,10 @@ const DAILY_THRESHOLD = 92;
 
 export function TrendReport({ txs, range }: TrendReportProps) {
   const days = rangeDays(range);
-  const useDaily = days <= DAILY_THRESHOLD;
-  const months = monthlySeries(txs, range);
+  // Multi-year ranges read best bucketed by year; short ones day-by-day; the rest monthly.
+  const useYearly = preferYearlyBuckets(range);
+  const useDaily = !useYearly && days <= DAILY_THRESHOLD;
+  const buckets = useYearly ? yearlySeries(txs, range) : monthlySeries(txs, range);
   const t = totals(txs);
 
   const chartData: CashflowPoint[] = useDaily
@@ -38,9 +40,10 @@ export function TrendReport({ txs, range }: TrendReportProps) {
         income: d.income,
         expense: d.expense,
       }))
-    : months.map((m) => ({ label: m.label, income: m.income, expense: m.expense }));
+    : buckets.map((m) => ({ label: m.label, income: m.income, expense: m.expense }));
 
-  const grain = useDaily ? "day" : "month";
+  const grain = useDaily ? "day" : useYearly ? "year" : "month";
+  const bucketNoun = useYearly ? "year" : "month";
 
   return (
     <div className="space-y-8">
@@ -67,15 +70,15 @@ export function TrendReport({ txs, range }: TrendReportProps) {
         </div>
       </ReportSection>
 
-      <ReportSection title="Monthly totals">
+      <ReportSection title={useYearly ? "Yearly totals" : "Monthly totals"}>
         <TableFrame>
           <Table>
             <TableCaption className="sr-only">
-              Income, expenses, and net total for each month in the selected period
+              Income, expenses, and net total for each {bucketNoun} in the selected period
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead scope="col">Month</TableHead>
+                <TableHead scope="col">{useYearly ? "Year" : "Month"}</TableHead>
                 <TableHead scope="col" className="text-right">
                   Income
                 </TableHead>
@@ -88,14 +91,14 @@ export function TrendReport({ txs, range }: TrendReportProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {months.length === 0 ? (
+              {buckets.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                    No monthly data for this period.
+                    No {bucketNoun}ly data for this period.
                   </TableCell>
                 </TableRow>
               ) : (
-                months.map((m: MonthlyPoint) => (
+                buckets.map((m: MonthlyPoint) => (
                   <TableRow key={m.key}>
                     <TableCell className="font-medium">{m.label}</TableCell>
                     <TableCell className="text-right">
@@ -111,7 +114,7 @@ export function TrendReport({ txs, range }: TrendReportProps) {
                 ))
               )}
             </TableBody>
-            {months.length > 0 ? (
+            {buckets.length > 0 ? (
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-semibold">Total</TableCell>

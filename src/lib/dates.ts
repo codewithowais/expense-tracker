@@ -1,8 +1,10 @@
 import {
   addMonths,
   differenceInCalendarDays,
+  differenceInCalendarMonths,
   eachDayOfInterval,
   eachMonthOfInterval,
+  eachYearOfInterval,
   endOfDay,
   endOfMonth,
   endOfYear,
@@ -12,6 +14,7 @@ import {
   startOfYear,
   subDays,
   subMonths,
+  subYears,
 } from "date-fns";
 import { toISODate } from "./format";
 
@@ -28,6 +31,7 @@ export type PresetKey =
   | "last-3-months"
   | "last-6-months"
   | "this-year"
+  | "last-year"
   | "all-time";
 
 export const PRESETS: { key: PresetKey; label: string }[] = [
@@ -36,6 +40,7 @@ export const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "last-3-months", label: "Last 3 months" },
   { key: "last-6-months", label: "Last 6 months" },
   { key: "this-year", label: "This year" },
+  { key: "last-year", label: "Last year" },
   { key: "all-time", label: "All time" },
 ];
 
@@ -74,6 +79,10 @@ export function presetRange(key: PresetKey, ref = new Date(), monthStartDay = 1)
       return { start: toISODate(startOfMonth(subMonths(ref, 5))), end: toISODate(endOfMonth(ref)) };
     case "this-year":
       return { start: toISODate(startOfYear(ref)), end: toISODate(endOfYear(ref)) };
+    case "last-year": {
+      const prev = subYears(ref, 1);
+      return { start: toISODate(startOfYear(prev)), end: toISODate(endOfYear(prev)) };
+    }
     case "all-time":
       return { start: "1970-01-01", end: toISODate(endOfDay(ref)) };
   }
@@ -119,4 +128,29 @@ export function monthKey(iso: string): string {
 
 export function monthKeyLabel(key: string): string {
   return format(parseISO(`${key}-01`), "MMM yyyy");
+}
+
+/** Whole calendar months spanned by the range, inclusive. */
+export function rangeMonths(range: DateRange): number {
+  return differenceInCalendarMonths(parseISO(range.end), parseISO(range.start)) + 1;
+}
+
+/**
+ * True when a range is long enough that a month-by-month view becomes noisy
+ * and yearly buckets read better (e.g. multi-year history). Threshold: > 24
+ * months.
+ */
+export function preferYearlyBuckets(range: DateRange): boolean {
+  return rangeMonths(range) > 24;
+}
+
+/** "YYYY" year strings spanning the range — for yearly-series charts. */
+export function yearsInRange(range: DateRange): string[] {
+  return eachYearOfInterval({ start: parseISO(range.start), end: parseISO(range.end) }).map((d) =>
+    String(d.getFullYear()),
+  );
+}
+
+export function yearKey(iso: string): string {
+  return iso.slice(0, 4); // "YYYY"
 }

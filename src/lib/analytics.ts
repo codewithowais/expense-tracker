@@ -1,5 +1,13 @@
 import { sumMoney } from "./format";
-import { daysInRange, monthKey, monthKeyLabel, monthsInRange, type DateRange } from "./dates";
+import {
+  daysInRange,
+  monthKey,
+  monthKeyLabel,
+  monthsInRange,
+  yearKey,
+  yearsInRange,
+  type DateRange,
+} from "./dates";
 import type { Budget, Category, Transaction } from "./types";
 
 export interface Totals {
@@ -97,6 +105,25 @@ export function monthlySeries(txs: Transaction[], range: DateRange): MonthlyPoin
     const income = inc.get(key) ?? 0;
     const expense = exp.get(key) ?? 0;
     return { key, label: monthKeyLabel(key), income, expense, net: sumMoney([income, -expense]) };
+  });
+}
+
+/**
+ * Income/expense/net bucketed by calendar year — used for multi-year ranges
+ * where a month-by-month series would be too dense to read.
+ */
+export function yearlySeries(txs: Transaction[], range: DateRange): MonthlyPoint[] {
+  const inc = new Map<string, number>();
+  const exp = new Map<string, number>();
+  for (const t of txs) {
+    const key = yearKey(t.date);
+    const m = t.type === "income" ? inc : exp;
+    m.set(key, sumMoney([m.get(key) ?? 0, t.amount]));
+  }
+  return yearsInRange(range).map((key) => {
+    const income = inc.get(key) ?? 0;
+    const expense = exp.get(key) ?? 0;
+    return { key, label: key, income, expense, net: sumMoney([income, -expense]) };
   });
 }
 

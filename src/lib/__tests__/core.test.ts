@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { parseMoneyInput, roundMoney, sumMoney, formatPercent } from "../format";
-import { monthRange, shiftMonthRange, presetRange, rangeDays, monthsInRange } from "../dates";
+import {
+  monthRange,
+  shiftMonthRange,
+  presetRange,
+  rangeDays,
+  monthsInRange,
+  rangeMonths,
+  preferYearlyBuckets,
+} from "../dates";
 import {
   budgetProgress,
   byCategory,
   pctChange,
   savingsRate,
   totals,
+  yearlySeries,
 } from "../analytics";
 import { toCSV, parseCSV } from "../csv";
 import { balanceOf, summarizePeople } from "../debts";
@@ -139,6 +148,38 @@ describe("date ranges", () => {
     expect(rangeDays(r)).toBe(29); // leap year February
     // last-3-months spans the current month plus the two before it.
     expect(monthsInRange(presetRange("last-3-months", new Date(2024, 5, 1)))).toHaveLength(3);
+  });
+});
+
+describe("multi-year reports", () => {
+  it("last-year preset spans the previous calendar year", () => {
+    const r = presetRange("last-year", new Date("2026-06-15"));
+    expect(r.start).toBe("2025-01-01");
+    expect(r.end).toBe("2025-12-31");
+  });
+
+  it("rangeMonths counts inclusive calendar months", () => {
+    expect(rangeMonths({ start: "2024-01-10", end: "2024-01-20" })).toBe(1);
+    expect(rangeMonths({ start: "2023-01-01", end: "2026-12-31" })).toBe(48);
+  });
+
+  it("prefers yearly buckets only for ranges over two years", () => {
+    expect(preferYearlyBuckets({ start: "2025-01-01", end: "2026-06-30" })).toBe(false); // 18 months
+    expect(preferYearlyBuckets({ start: "2023-01-01", end: "2026-12-31" })).toBe(true); // 48 months
+  });
+
+  it("yearlySeries buckets income/expense/net per calendar year", () => {
+    const txs = [
+      tx({ type: "income", amount: 1000, categoryId: "c", date: "2024-03-01" }),
+      tx({ type: "expense", amount: 400, categoryId: "c", date: "2024-07-01" }),
+      tx({ type: "income", amount: 2000, categoryId: "c", date: "2025-02-01" }),
+      tx({ type: "expense", amount: 500, categoryId: "c", date: "2026-01-01" }),
+    ];
+    const series = yearlySeries(txs, { start: "2024-01-01", end: "2026-12-31" });
+    expect(series.map((p) => p.key)).toEqual(["2024", "2025", "2026"]);
+    expect(series[0]).toMatchObject({ income: 1000, expense: 400, net: 600 });
+    expect(series[1]).toMatchObject({ income: 2000, expense: 0, net: 2000 });
+    expect(series[2]).toMatchObject({ income: 0, expense: 500, net: -500 });
   });
 });
 
