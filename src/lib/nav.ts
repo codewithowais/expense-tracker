@@ -1,5 +1,5 @@
 import {
-  ArrowLeftRight, BarChart3, FileText, LayoutDashboard, PiggyBank,
+  ArrowLeftRight, BarChart3, FileText, Gem, LayoutDashboard, PiggyBank,
   Settings, Tags, Target, TrendingDown, TrendingUp, Users,
   type LucideIcon,
 } from "lucide-react";
@@ -39,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Categories", href: "/categories", icon: Tags },
       { label: "Budgets", href: "/budgets", icon: PiggyBank },
       { label: "Savings", href: "/savings", icon: Target },
+      { label: "Assets", href: "/assets", icon: Gem },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },

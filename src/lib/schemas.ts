@@ -81,3 +81,50 @@ export const contributionSchema = z.object({
 });
 
 export type ContributionFormValues = z.infer<typeof contributionSchema>;
+
+export const assetKindSchema = z.enum([
+  "gold",
+  "silver",
+  "property",
+  "stocks",
+  "crypto",
+  "cash",
+  "other",
+]);
+
+export const assetSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required").max(50, "Keep it under 50 characters"),
+    kind: assetKindSchema,
+    quantity: z
+      .number()
+      .positive("Quantity must be greater than zero")
+      .max(1_000_000_000)
+      .nullable()
+      .optional(),
+    unit: z.string().trim().max(16, "Keep the unit short").optional(),
+    purchaseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a valid date"),
+    purchaseAmount: z.number().positive("Enter what you paid").max(1_000_000_000),
+    extraCost: z.number().gte(0, "Can't be negative").max(1_000_000_000).optional(),
+    currentUnitPrice: z
+      .number()
+      .positive("Rate must be greater than zero")
+      .max(1_000_000_000)
+      .nullable()
+      .optional(),
+    currentValue: z
+      .number()
+      .positive("Value must be greater than zero")
+      .max(1_000_000_000)
+      .nullable()
+      .optional(),
+    note: z.string().max(140, "Keep the note under 140 characters").optional(),
+    color: z.string().min(1),
+    icon: z.string().min(1),
+  })
+  .refine((v) => v.quantity == null || (v.unit != null && v.unit.trim().length > 0), {
+    message: "Add a unit (e.g. gram) for a quantity",
+    path: ["unit"],
+  });
+
+export type AssetFormValues = z.infer<typeof assetSchema>;

@@ -1,4 +1,4 @@
-import type { Currency, CurrencyCode, PaymentMethod, TxType } from "./types";
+import type { AssetKind, Currency, CurrencyCode, PaymentMethod, TxType } from "./types";
 
 export const CURRENCIES: Record<CurrencyCode, Currency> = {
   PKR: { code: "PKR", symbol: "Rs", name: "Pakistani Rupee", decimals: 0, locale: "en-PK" },
@@ -36,9 +36,34 @@ export const CATEGORY_ICONS = [
   "Zap", "Wifi", "Smartphone", "HeartPulse", "Pill", "Dumbbell",
   "GraduationCap", "BookOpen", "Gift", "Shirt", "Film", "Gamepad2",
   "Coffee", "Baby", "PawPrint", "Wrench", "Sparkles", "Landmark",
-  "PiggyBank", "TrendingUp", "Briefcase", "Wallet", "Coins",
+  "PiggyBank", "TrendingUp", "Briefcase", "Wallet", "Coins", "Gem",
   "DollarSign", "ReceiptText", "Building2", "HandCoins", "Percent",
 ] as const;
+
+/**
+ * Asset kinds with their display label and sensible defaults (icon, accent,
+ * and unit). Selecting a kind in the asset form pre-fills these.
+ */
+export const ASSET_KINDS: {
+  value: AssetKind;
+  label: string;
+  icon: string;
+  color: string;
+  /** Default unit for unit-priced kinds; "" means lump-sum (no quantity). */
+  unit: string;
+}[] = [
+  { value: "gold", label: "Gold", icon: "Gem", color: "chart-4", unit: "gram" },
+  { value: "silver", label: "Silver", icon: "Coins", color: "chart-2", unit: "gram" },
+  { value: "property", label: "Property", icon: "Building2", color: "chart-1", unit: "" },
+  { value: "stocks", label: "Stocks", icon: "TrendingUp", color: "chart-5", unit: "share" },
+  { value: "crypto", label: "Crypto", icon: "Coins", color: "chart-3", unit: "coin" },
+  { value: "cash", label: "Cash / FX", icon: "Wallet", color: "chart-6", unit: "" },
+  { value: "other", label: "Other", icon: "Sparkles", color: "chart-1", unit: "" },
+];
+
+export const ASSET_KIND_MAP = Object.fromEntries(
+  ASSET_KINDS.map((k) => [k.value, k]),
+) as Record<AssetKind, (typeof ASSET_KINDS)[number]>;
 
 interface SeedCategory {
   name: string;

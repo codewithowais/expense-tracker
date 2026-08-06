@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from "dexie";
 import type {
   AppSettings,
+  Asset,
   Budget,
   Category,
   DebtEntry,
@@ -30,6 +31,7 @@ export class LedgerlyDB extends Dexie {
   debtEntries!: EntityTable<DebtEntry, "id">;
   savingsGoals!: EntityTable<SavingsGoal, "id">;
   savingsContributions!: EntityTable<SavingsContribution, "id">;
+  assets!: EntityTable<Asset, "id">;
   meta!: EntityTable<MetaRow, "key">;
 
   constructor(namespace: string) {
@@ -56,6 +58,10 @@ export class LedgerlyDB extends Dexie {
     this.version(3).stores({
       savingsGoals: "id, name, updatedAt",
       savingsContributions: "id, goalId, date, updatedAt",
+    });
+    // v4: Assets (gold, property, shares, …).
+    this.version(4).stores({
+      assets: "id, name, kind, updatedAt",
     });
   }
 }
@@ -110,6 +116,7 @@ const SYNCED_TABLES = [
   "debtEntries",
   "savingsGoals",
   "savingsContributions",
+  "assets",
 ] as const;
 
 let suppressed = false;

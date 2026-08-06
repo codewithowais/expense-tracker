@@ -103,6 +103,47 @@ export interface SavingsContribution extends Syncable {
   date: string;
 }
 
+/** Kinds of holdings the assets tracker understands (drives icon/label defaults). */
+export type AssetKind =
+  | "gold"
+  | "silver"
+  | "property"
+  | "stocks"
+  | "crypto"
+  | "cash"
+  | "other";
+
+/**
+ * A held asset (gold, property, shares, …) tracked at cost and revalued
+ * manually against a current unit price or total value the user updates.
+ */
+export interface Asset extends Syncable {
+  id: string;
+  name: string;
+  kind: AssetKind;
+  /** Quantity for unit-priced assets (e.g. 2.5 grams); null for lump-sum. */
+  quantity: number | null;
+  /** Unit label for the quantity, e.g. "gram", "tola", "share"; "" when lump-sum. */
+  unit: string;
+  /** Purchase date, ISO "YYYY-MM-DD". */
+  purchaseDate: string;
+  /** Total price paid for the quantity, in major currency units. */
+  purchaseAmount: number;
+  /** Extra acquisition cost — packaging, making charges, fees. */
+  extraCost: number;
+  /** Latest known price per unit, in major currency units; null until set. */
+  currentUnitPrice: number | null;
+  /** Direct current total value for lump-sum assets (no unit); null otherwise. */
+  currentValue: number | null;
+  /** ISO timestamp when the current price/value was last set; null if never. */
+  priceUpdatedAt: string | null;
+  note: string;
+  /** Chart palette token for the asset's accent. */
+  color: string;
+  /** lucide icon name. */
+  icon: string;
+}
+
 export type CurrencyCode = "PKR" | "USD" | "EUR" | "GBP" | "INR" | "AED" | "SAR";
 
 export interface AppSettings {
