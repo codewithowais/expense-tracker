@@ -74,7 +74,7 @@ The worker registers in **production only** (it would fight Turbopack HMR in `ne
 
 ## Run with Docker
 
-A multi-stage [`Dockerfile`](Dockerfile) pinned to **Node 22** builds and runs the app the same way regardless of the host's Node version (a host Node change can't break it). It uses Next.js standalone output (`output: "standalone"`) for a small, self-contained image.
+A multi-stage [`Dockerfile`](Dockerfile) pinned to **Node 24** builds and runs the app the same way regardless of the host's Node version (a host Node change can't break it). It uses Next.js standalone output (`output: "standalone"`, enabled off-Vercel) for a small, self-contained image.
 
 ```bash
 docker compose up --build
@@ -90,7 +90,7 @@ docker run -p 3000:3000 --env-file .env ledgerly
 
 - **Server-only** vars (`DATABASE_URL`, `APP_PIN`, `SYNC_SECRET`) are read at **runtime** — pass them with `--env-file .env` (compose uses `env_file`).
 - `NEXT_PUBLIC_*` vars are inlined at **build time**, so `NEXT_PUBLIC_SYNC_TOKEN` must be a **build arg** (already wired in `docker-compose.yml`).
-- Building/running outside Docker needs **Node ≥ 20** (see `engines`) — Next.js 16 does not run on Node 16.
+- Building/running outside Docker needs **Node 24** (see `engines`) — Next.js 16 does not run on Node 16.
 
 ## Scripts
 

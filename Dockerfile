@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-# Pinned Node version — the container always runs Node 22 regardless of the
+# Pinned Node version — the container always runs this Node regardless of the
 # host's installed Node, so a host upgrade can never break the app.
-ARG NODE_VERSION=22-alpine
+ARG NODE_VERSION=24-alpine
 
 # ---- deps: install from a clean, reproducible lockfile ----
 FROM node:${NODE_VERSION} AS deps
