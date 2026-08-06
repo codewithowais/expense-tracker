@@ -49,7 +49,7 @@ export function Onboarding() {
           <StepDots step={step} />
         </div>
 
-        <div className="rounded-3xl bg-background/95 p-7 shadow-2xl backdrop-blur sm:p-8">
+        <div className="rounded-3xl bg-background/95 p-7 text-foreground shadow-2xl backdrop-blur sm:p-8">
           {step === "welcome" && (
             <div className="space-y-6">
               <header className="space-y-1.5 text-center">

@@ -43,7 +43,7 @@ export function LockScreen({ name }: { name?: string }) {
         </h1>
         <p className="mt-1.5 text-sm text-white/60">Enter your PIN to unlock</p>
 
-        <div className="mt-10 rounded-3xl bg-background/95 p-8 shadow-2xl backdrop-blur">
+        <div className="mt-10 rounded-3xl bg-background/95 p-8 text-foreground shadow-2xl backdrop-blur">
           <PinPad
             value={pin}
             onChange={setPin}
