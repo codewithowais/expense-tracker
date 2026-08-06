@@ -201,6 +201,12 @@
     filter: blur(0.45em);
     user-select: none;
   }
+  /* Amount inputs (edit/add) still blur when hidden, but reveal on focus so
+     they stay editable — click the field and the figure sharpens. */
+  [data-hide-amounts="true"] input.amount:focus {
+    filter: none;
+    user-select: auto;
+  }
   h1, h2, h3 {
     @apply font-heading;
     letter-spacing: -0.02em;

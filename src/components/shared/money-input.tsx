@@ -68,7 +68,7 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
           setText(parsed != null ? String(parsed) : "");
         }}
         className={cn(
-          "w-full border border-input bg-transparent pr-4 font-heading font-semibold tabular-nums outline-none transition-colors",
+          "amount w-full border border-input bg-transparent pr-4 font-heading font-semibold tabular-nums outline-none transition-colors",
           "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40",
           "aria-invalid:border-destructive aria-invalid:ring-destructive/30",
           size === "lg" ? "h-16 rounded-2xl pl-11 text-3xl" : "h-11 rounded-xl pl-9 text-base",
