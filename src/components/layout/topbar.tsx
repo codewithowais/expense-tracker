@@ -36,6 +36,11 @@ export function Topbar() {
   async function handleSignOut() {
     await signOut();
     setActiveUser(null);
+    try {
+      localStorage.removeItem("ledgerly.lastUserId");
+    } catch {
+      // ignore storage failures
+    }
     router.push("/login");
   }
 

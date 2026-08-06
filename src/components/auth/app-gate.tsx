@@ -12,26 +12,68 @@ import { useLockStore } from "@/stores/lock-store";
 import { useSession } from "@/lib/auth/client";
 import { setActiveUser } from "@/lib/db/database";
 
+/** localStorage key remembering the last signed-in user (for offline boot). */
+export const LAST_USER_KEY = "ledgerly.lastUserId";
+
+function readLastUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(LAST_USER_KEY);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Gates the app behind the signed-in session, then per-user first-run
- * onboarding and the quick-unlock PIN. The local database is pointed at the
- * current user before any data hook runs, so accounts never share local data.
+ * onboarding and the quick-unlock PIN. Works OFFLINE: when the Better Auth
+ * session endpoint is unreachable, it boots from the last-known user id so a
+ * logged-in user isn't locked out of their local-first data. The local
+ * database is pointed at the current user before any data hook runs.
  */
 export function AppGate({ children }: { children: React.ReactNode }) {
   const mounted = useMounted();
-  const { data: session, isPending } = useSession();
-  const userId = session?.user?.id ?? null;
-  const [dbReadyFor, setDbReadyFor] = useState<string | null>(null);
+  const { data: session, error } = useSession();
+  const sessionUserId = session?.user?.id ?? null;
 
-  // Point the local store at this user before rendering anything that queries.
+  // Remember the signed-in user so we can boot offline later.
+  useEffect(() => {
+    if (sessionUserId) {
+      try {
+        window.localStorage.setItem(LAST_USER_KEY, sessionUserId);
+      } catch {
+        // ignore storage failures
+      }
+    }
+  }, [sessionUserId]);
+
+  // If the session endpoint can't be reached — the OS may still report "online"
+  // while the server is unreachable — stop waiting after a short grace period
+  // and boot from the cached user instead of hanging on the splash.
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    if (sessionUserId) return;
+    const t = setTimeout(() => setTimedOut(true), 3500);
+    return () => clearTimeout(t);
+  }, [sessionUserId]);
+
+  const offline = mounted && typeof navigator !== "undefined" && !navigator.onLine;
+  const sessionUnreachable = offline || Boolean(error) || timedOut;
+  // Effective user: the live session, or (when the session can't be reached)
+  // the last known user, so a logged-in user isn't locked out offline.
+  const userId = sessionUserId ?? (sessionUnreachable ? readLastUserId() : null);
+
+  const [dbReadyFor, setDbReadyFor] = useState<string | null>(null);
   useEffect(() => {
     setActiveUser(userId);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reflect the DB switch
     setDbReadyFor(userId);
   }, [userId]);
 
-  if (!mounted || isPending) return <Splash />;
-  // Middleware redirects unauthenticated users to /login; this is a safety net.
+  if (!mounted) return <Splash />;
+  // No user yet: either still resolving the session online (wait), or the
+  // session is unreachable and there's no cached user to fall back to.
+  // (Logged-out online users are redirected to /login by middleware.)
   if (!userId) return <Splash />;
 
   const deactivated = Boolean((session?.user as { deactivatedAt?: unknown } | undefined)?.deactivatedAt);
@@ -58,7 +100,7 @@ function AuthedApp({ children, fallbackName }: { children: React.ReactNode; fall
     void ensureSeed();
   }, []);
 
-  // Ask the server whether THIS user has a PIN configured.
+  // Ask the server whether THIS user has a PIN configured (offline: cached).
   useEffect(() => {
     let active = true;
     void fetchPinRequired().then((required) => {
