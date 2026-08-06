@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Lock, LogOut, Menu } from "lucide-react";
 import { Brand } from "./brand";
+import { PrivacyToggle } from "./privacy-toggle";
 import { ThemeToggle } from "./theme-toggle";
 import { SyncStatus } from "@/components/sync/sync-status";
 import { NAV_GROUPS } from "@/lib/nav";
@@ -129,6 +130,7 @@ export function Topbar() {
 
       <div className="flex items-center gap-1">
         <SyncStatus />
+        <PrivacyToggle />
         {pinRequired ? (
           <Button
             variant="ghost"

@@ -57,7 +57,7 @@ export function CashflowChart({
                     <span className="size-2 rounded-full" style={{ background: p.color }} />
                     {String(p.dataKey)}
                   </span>
-                  <span className="font-medium tabular-nums">{fmt(Number(p.value))}</span>
+                  <span className="amount font-medium tabular-nums">{fmt(Number(p.value))}</span>
                 </div>
               ))}
             </div>

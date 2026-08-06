@@ -36,5 +36,5 @@ export function Money({ amount, tone = "plain", signed, compact, className }: Mo
         ? `+${fmt(amount, { compact })}`
         : fmt(amount, { compact, signed: signed && tone === "net" });
 
-  return <span className={cn("tnum tabular-nums", toneClass, className)}>{display}</span>;
+  return <span className={cn("amount tnum tabular-nums", toneClass, className)}>{display}</span>;
 }

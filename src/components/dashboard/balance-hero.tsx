@@ -21,7 +21,7 @@ export function BalanceHero({ totals, periodLabel }: { totals: Totals; periodLab
       <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-medium text-white/70">Net balance · {periodLabel}</p>
-          <p className="mt-2 font-heading text-4xl font-semibold tracking-tight break-words text-white tabular-nums sm:text-5xl">
+          <p className="amount mt-2 font-heading text-4xl font-semibold tracking-tight break-words text-white tabular-nums sm:text-5xl">
             {positive ? "" : "−"}
             {fmt(Math.abs(totals.net))}
           </p>
@@ -58,7 +58,7 @@ function HeroPill({ icon, label, value }: { icon: React.ReactNode; label: string
     <span className="inline-flex items-center gap-2 rounded-full bg-white/10 py-1.5 pl-2.5 pr-3.5 text-sm text-white backdrop-blur-sm">
       <span className="grid size-6 place-items-center rounded-full bg-white/15">{icon}</span>
       <span className="text-white/70">{label}</span>
-      <span className="font-semibold tabular-nums">{value}</span>
+      <span className="amount font-semibold tabular-nums">{value}</span>
     </span>
   );
 }

@@ -59,7 +59,7 @@ export function CategoryDonut({
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-xs text-muted-foreground">{centerLabel}</span>
-            <span className="font-heading text-lg font-semibold tabular-nums">
+            <span className="amount font-heading text-lg font-semibold tabular-nums">
               {fmt(total, { compact: true })}
             </span>
           </div>

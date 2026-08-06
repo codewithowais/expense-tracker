@@ -13,7 +13,7 @@ interface StatCardProps {
   delta?: number | null;
   /** For spend metrics, an increase is "bad" (red); flip the coloring. */
   invertDelta?: boolean;
-  hint?: string;
+  hint?: React.ReactNode;
   className?: string;
 }
 

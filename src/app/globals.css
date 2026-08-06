@@ -191,6 +191,16 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
   }
+  /* Privacy mode: one toggle blurs every money amount (only amounts). The blur
+     is set in `em` so it scales with the figure's size — big hero numbers and
+     small row amounts are both unreadable. */
+  .amount {
+    transition: filter 0.15s ease;
+  }
+  [data-hide-amounts="true"] .amount {
+    filter: blur(0.45em);
+    user-select: none;
+  }
   h1, h2, h3 {
     @apply font-heading;
     letter-spacing: -0.02em;

@@ -172,7 +172,13 @@ export function LedgerView({ type }: LedgerViewProps) {
               icon={copy.icon}
               accent={copy.accent}
               value={view.topSlice ? (view.topSlice.category?.name ?? "Uncategorized") : "None"}
-              hint={view.topSlice ? fmt(view.topSlice.total) : "No categorized activity"}
+              hint={
+                view.topSlice ? (
+                  <span className="amount">{fmt(view.topSlice.total)}</span>
+                ) : (
+                  "No categorized activity"
+                )
+              }
             />
           </div>
 
