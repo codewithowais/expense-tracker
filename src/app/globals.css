@@ -68,86 +68,86 @@
 :root {
   --radius: 0.875rem;
 
-  /* Warm paper-white base with deep evergreen identity */
-  --background: oklch(0.985 0.006 95);
-  --foreground: oklch(0.22 0.014 70);
+  /* Cool paper-white base with a confident cobalt-blue identity */
+  --background: oklch(0.986 0.004 255);
+  --foreground: oklch(0.23 0.02 262);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.014 70);
+  --card-foreground: oklch(0.23 0.02 262);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.014 70);
+  --popover-foreground: oklch(0.23 0.02 262);
 
-  --primary: oklch(0.46 0.098 159);
-  --primary-foreground: oklch(0.98 0.01 150);
+  --primary: oklch(0.52 0.19 262);
+  --primary-foreground: oklch(0.99 0.01 255);
 
-  --secondary: oklch(0.965 0.008 95);
-  --secondary-foreground: oklch(0.30 0.02 70);
+  --secondary: oklch(0.966 0.008 255);
+  --secondary-foreground: oklch(0.31 0.03 262);
 
-  --muted: oklch(0.965 0.006 95);
-  --muted-foreground: oklch(0.53 0.014 75);
+  --muted: oklch(0.966 0.006 255);
+  --muted-foreground: oklch(0.53 0.02 260);
 
-  --accent: oklch(0.95 0.022 158);
-  --accent-foreground: oklch(0.32 0.05 159);
+  --accent: oklch(0.95 0.035 258);
+  --accent-foreground: oklch(0.40 0.15 262);
 
   --destructive: oklch(0.575 0.16 25);
 
-  --border: oklch(0.912 0.008 90);
-  --input: oklch(0.912 0.008 90);
-  --ring: oklch(0.46 0.098 159);
+  --border: oklch(0.912 0.009 255);
+  --input: oklch(0.912 0.009 255);
+  --ring: oklch(0.52 0.19 262);
 
-  /* Finance semantics */
+  /* Finance semantics (kept meaningful: income green, expense red, savings amber) */
   --income: oklch(0.52 0.11 160);
   --income-soft: oklch(0.94 0.035 160);
   --expense: oklch(0.565 0.16 27);
   --expense-soft: oklch(0.95 0.03 30);
   --savings: oklch(0.68 0.13 72);
   --savings-soft: oklch(0.95 0.045 82);
-  --info: oklch(0.55 0.11 245);
+  --info: oklch(0.55 0.14 250);
 
-  /* Harmonious chart palette */
-  --chart-1: oklch(0.52 0.11 162);
-  --chart-2: oklch(0.70 0.14 74);
-  --chart-3: oklch(0.60 0.16 28);
-  --chart-4: oklch(0.53 0.11 245);
-  --chart-5: oklch(0.55 0.15 322);
-  --chart-6: oklch(0.66 0.11 195);
+  /* Harmonious chart palette (cobalt-led) */
+  --chart-1: oklch(0.52 0.19 262);
+  --chart-2: oklch(0.65 0.14 232);
+  --chart-3: oklch(0.58 0.16 300);
+  --chart-4: oklch(0.68 0.13 72);
+  --chart-5: oklch(0.55 0.13 160);
+  --chart-6: oklch(0.62 0.15 350);
 
-  --sidebar: oklch(0.982 0.006 100);
-  --sidebar-foreground: oklch(0.30 0.014 70);
-  --sidebar-primary: oklch(0.46 0.098 159);
-  --sidebar-primary-foreground: oklch(0.98 0.01 150);
-  --sidebar-accent: oklch(0.95 0.022 158);
-  --sidebar-accent-foreground: oklch(0.32 0.05 159);
-  --sidebar-border: oklch(0.912 0.008 90);
-  --sidebar-ring: oklch(0.46 0.098 159);
+  --sidebar: oklch(0.982 0.006 255);
+  --sidebar-foreground: oklch(0.31 0.02 262);
+  --sidebar-primary: oklch(0.52 0.19 262);
+  --sidebar-primary-foreground: oklch(0.99 0.01 255);
+  --sidebar-accent: oklch(0.95 0.035 258);
+  --sidebar-accent-foreground: oklch(0.40 0.15 262);
+  --sidebar-border: oklch(0.912 0.009 255);
+  --sidebar-ring: oklch(0.52 0.19 262);
 }
 
 .dark {
-  --background: oklch(0.175 0.008 78);
-  --foreground: oklch(0.94 0.008 92);
+  --background: oklch(0.19 0.024 262);
+  --foreground: oklch(0.94 0.01 255);
 
-  --card: oklch(0.215 0.009 80);
-  --card-foreground: oklch(0.94 0.008 92);
-  --popover: oklch(0.215 0.009 80);
-  --popover-foreground: oklch(0.94 0.008 92);
+  --card: oklch(0.235 0.026 262);
+  --card-foreground: oklch(0.94 0.01 255);
+  --popover: oklch(0.235 0.026 262);
+  --popover-foreground: oklch(0.94 0.01 255);
 
-  --primary: oklch(0.66 0.115 160);
-  --primary-foreground: oklch(0.17 0.02 160);
+  --primary: oklch(0.68 0.16 260);
+  --primary-foreground: oklch(0.17 0.03 262);
 
-  --secondary: oklch(0.265 0.01 80);
-  --secondary-foreground: oklch(0.92 0.008 92);
+  --secondary: oklch(0.28 0.024 262);
+  --secondary-foreground: oklch(0.92 0.01 255);
 
-  --muted: oklch(0.255 0.01 80);
-  --muted-foreground: oklch(0.70 0.012 88);
+  --muted: oklch(0.27 0.024 262);
+  --muted-foreground: oklch(0.72 0.018 258);
 
-  --accent: oklch(0.30 0.03 160);
-  --accent-foreground: oklch(0.92 0.02 150);
+  --accent: oklch(0.33 0.06 262);
+  --accent-foreground: oklch(0.92 0.03 258);
 
   --destructive: oklch(0.62 0.17 25);
 
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 13%);
-  --ring: oklch(0.66 0.115 160);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.68 0.16 260);
 
   --income: oklch(0.72 0.13 162);
   --income-soft: oklch(0.30 0.05 162);
@@ -155,23 +155,23 @@
   --expense-soft: oklch(0.32 0.06 30);
   --savings: oklch(0.78 0.13 78);
   --savings-soft: oklch(0.33 0.06 78);
-  --info: oklch(0.68 0.12 245);
+  --info: oklch(0.70 0.13 250);
 
-  --chart-1: oklch(0.66 0.12 162);
-  --chart-2: oklch(0.78 0.14 76);
-  --chart-3: oklch(0.68 0.16 30);
-  --chart-4: oklch(0.66 0.12 245);
-  --chart-5: oklch(0.68 0.15 322);
-  --chart-6: oklch(0.74 0.11 195);
+  --chart-1: oklch(0.68 0.16 260);
+  --chart-2: oklch(0.72 0.13 232);
+  --chart-3: oklch(0.70 0.15 300);
+  --chart-4: oklch(0.78 0.13 78);
+  --chart-5: oklch(0.70 0.13 162);
+  --chart-6: oklch(0.72 0.15 350);
 
-  --sidebar: oklch(0.195 0.008 80);
-  --sidebar-foreground: oklch(0.90 0.008 92);
-  --sidebar-primary: oklch(0.66 0.115 160);
-  --sidebar-primary-foreground: oklch(0.17 0.02 160);
-  --sidebar-accent: oklch(0.30 0.03 160);
-  --sidebar-accent-foreground: oklch(0.92 0.02 150);
-  --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.66 0.115 160);
+  --sidebar: oklch(0.215 0.024 262);
+  --sidebar-foreground: oklch(0.90 0.01 255);
+  --sidebar-primary: oklch(0.68 0.16 260);
+  --sidebar-primary-foreground: oklch(0.17 0.03 262);
+  --sidebar-accent: oklch(0.33 0.06 262);
+  --sidebar-accent-foreground: oklch(0.92 0.03 258);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.68 0.16 260);
 }
 
 @layer base {
@@ -202,13 +202,13 @@
 }
 
 @layer components {
-  /* Signature hero surface: layered evergreen gradient mesh */
+  /* Signature hero surface: layered cobalt-blue gradient mesh */
   .surface-hero {
     background:
-      radial-gradient(120% 140% at 0% 0%, oklch(0.55 0.11 165 / 0.22), transparent 55%),
-      radial-gradient(120% 140% at 100% 0%, oklch(0.70 0.13 74 / 0.14), transparent 50%),
-      linear-gradient(155deg, oklch(0.30 0.06 162), oklch(0.24 0.045 168));
-    color: oklch(0.97 0.01 150);
+      radial-gradient(120% 140% at 0% 0%, oklch(0.62 0.16 235 / 0.32), transparent 55%),
+      radial-gradient(120% 140% at 100% 0%, oklch(0.56 0.18 262 / 0.20), transparent 50%),
+      linear-gradient(155deg, oklch(0.34 0.13 262), oklch(0.25 0.10 266));
+    color: oklch(0.97 0.012 255);
   }
   .surface-grain {
     position: relative;
