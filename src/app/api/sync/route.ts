@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { ensureSchema, getSql, isAuthorized } from "@/lib/server/neon";
+import { ensureSchema, getSql } from "@/lib/server/neon";
+import { getSession } from "@/lib/auth/session";
 import {
   SYNC_COLLECTIONS,
   type SyncCollection,
@@ -14,9 +15,14 @@ export const dynamic = "force-dynamic";
 const COLLECTION_SET = new Set<string>(SYNC_COLLECTIONS);
 
 export async function POST(request: Request) {
-  if (!isAuthorized(request.headers.get("x-sync-token"))) {
+  // Isolation is enforced here and ONLY here: the userId comes from the
+  // session cookie, never from the request body.
+  const session = await getSession();
+  const user = session?.user as { id?: string; deactivatedAt?: unknown } | undefined;
+  if (!user?.id || user.deactivatedAt) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = user.id;
 
   const sql = getSql();
   if (!sql) {
@@ -33,21 +39,22 @@ export async function POST(request: Request) {
   try {
     await ensureSchema(sql);
 
-    // Push: upsert incoming records with last-write-wins on updated_at.
+    // Push: upsert this user's incoming records (last-write-wins on updated_at).
     for (const group of body.changes ?? []) {
       if (!COLLECTION_SET.has(group.collection)) continue;
       for (const rec of group.records ?? []) {
         if (!rec?.id || !rec.updatedAt || !rec.doc) continue;
         await sql`
-          INSERT INTO sync_records (collection, id, updated_at, deleted_at, doc)
+          INSERT INTO sync_records (user_id, collection, id, updated_at, deleted_at, doc)
           VALUES (
+            ${userId},
             ${group.collection},
             ${rec.id},
             ${rec.updatedAt}::timestamptz,
             ${rec.deletedAt ?? null}::timestamptz,
             ${JSON.stringify(rec.doc)}::jsonb
           )
-          ON CONFLICT (collection, id) DO UPDATE
+          ON CONFLICT (user_id, collection, id) DO UPDATE
             SET updated_at = EXCLUDED.updated_at,
                 deleted_at = EXCLUDED.deleted_at,
                 doc = EXCLUDED.doc
@@ -56,12 +63,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Pull: everything changed since the client's last successful pull.
+    // Pull: only THIS user's rows changed since their last successful pull.
     const since = body.since ?? null;
     const rows = (await sql`
       SELECT collection, doc, updated_at, deleted_at
       FROM sync_records
-      WHERE ${since}::timestamptz IS NULL OR updated_at > ${since}::timestamptz
+      WHERE user_id = ${userId}
+        AND (${since}::timestamptz IS NULL OR updated_at > ${since}::timestamptz)
       ORDER BY updated_at ASC
     `) as { collection: string; doc: Record<string, unknown>; updated_at: string; deleted_at: string | null }[];
 

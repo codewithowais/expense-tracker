@@ -19,17 +19,22 @@ export function getSql(): NeonQueryFunction<false, false> | null {
 /** Create the single generic sync table on first use (idempotent). */
 export async function ensureSchema(sql: NeonQueryFunction<false, false>): Promise<void> {
   if (schemaReady) return;
+  // Multi-tenant: rows are scoped by user_id, which is part of the primary key
+  // (default categories share deterministic ids across users, so the id alone
+  // is not unique). On a fresh database this creates the correct shape; an
+  // existing single-user table is upgraded by scripts/migrate.mjs --cutover.
   await sql`
     CREATE TABLE IF NOT EXISTS sync_records (
+      user_id text NOT NULL,
       collection text NOT NULL,
       id text NOT NULL,
       updated_at timestamptz NOT NULL,
       deleted_at timestamptz,
       doc jsonb NOT NULL,
-      PRIMARY KEY (collection, id)
+      PRIMARY KEY (user_id, collection, id)
     )
   `;
-  await sql`CREATE INDEX IF NOT EXISTS sync_records_updated_at_idx ON sync_records (updated_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS sync_records_user_updated_idx ON sync_records (user_id, updated_at)`;
   schemaReady = true;
 }
 
