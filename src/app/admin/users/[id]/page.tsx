@@ -9,9 +9,40 @@ import type { Transaction } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Money } from "@/components/shared/money";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CURRENCIES } from "@/lib/constants";
+
+// Server-side money rendering — the app's <Money> depends on the viewer's local
+// per-user DB (useMoney), which isn't available under /admin. Format from the
+// target user's own currency instead.
+type Tone = "income" | "expense" | "net";
+function AdminMoney({
+  amount,
+  tone,
+  signed,
+  currency,
+}: {
+  amount: number;
+  tone: Tone;
+  signed?: boolean;
+  currency: string;
+}) {
+  const cur = CURRENCIES[currency as keyof typeof CURRENCIES] ?? CURRENCIES.PKR;
+  const num = Math.abs(amount).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: cur.decimals,
+  });
+  const sign = signed ? (amount < 0 ? "−" : "+") : "";
+  const toneClass =
+    tone === "income" ? "text-income" : tone === "expense" ? "text-expense" : amount >= 0 ? "text-income" : "text-expense";
+  return (
+    <span className={`tabular-nums ${toneClass}`}>
+      {sign}
+      {cur.symbol} {num}
+    </span>
+  );
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,10 +139,12 @@ export default async function AdminUserLedgerPage({
   const me = await getActiveUser();
   const isSelf = (me as { id?: string } | null)?.id === user.id;
 
-  const [txDocsRaw, catDocsRaw] = await Promise.all([
+  const [txDocsRaw, catDocsRaw, settingsDocsRaw] = await Promise.all([
     loadDocs(id, "transactions"),
     loadDocs(id, "categories"),
+    loadDocs(id, "settings"),
   ]);
+  const currency = (settingsDocsRaw[0] as { currency?: string } | undefined)?.currency ?? "PKR";
 
   const txDocs = (txDocsRaw as TxDoc[]).filter(
     (d) => d.type === "income" || d.type === "expense",
@@ -174,13 +207,13 @@ export default async function AdminUserLedgerPage({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <LedgerStat label="Income" icon={<TrendingUp className="size-[1.05rem]" aria-hidden />} accent="income">
-          <Money amount={summary.income} tone="income" />
+          <AdminMoney amount={summary.income} tone="income" currency={currency} />
         </LedgerStat>
         <LedgerStat label="Expense" icon={<TrendingDown className="size-[1.05rem]" aria-hidden />} accent="expense">
-          <Money amount={summary.expense} tone="expense" />
+          <AdminMoney amount={summary.expense} tone="expense" currency={currency} />
         </LedgerStat>
         <LedgerStat label="Net" icon={<PiggyBank className="size-[1.05rem]" aria-hidden />} accent="primary">
-          <Money amount={summary.net} tone="net" signed />
+          <AdminMoney amount={summary.net} tone="net" signed currency={currency} />
         </LedgerStat>
       </div>
 
@@ -216,12 +249,14 @@ export default async function AdminUserLedgerPage({
                     {t.method ? ` · ${t.method}` : ""}
                   </p>
                 </div>
-                <Money
-                  amount={typeof t.amount === "number" ? t.amount : 0}
-                  tone={t.type === "income" ? "income" : "expense"}
-                  signed
-                  className="shrink-0"
-                />
+                <span className="shrink-0">
+                  <AdminMoney
+                    amount={typeof t.amount === "number" ? t.amount : 0}
+                    tone={t.type === "income" ? "income" : "expense"}
+                    signed
+                    currency={currency}
+                  />
+                </span>
               </li>
             ))}
           </ul>
