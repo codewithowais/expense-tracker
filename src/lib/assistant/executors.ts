@@ -118,7 +118,10 @@ export async function runReadTool(
       const q = catName.toLowerCase();
       txs = txs.filter((t) => (byId.get(t.categoryId) ?? "").toLowerCase().includes(q));
     }
-    txs.sort((a, b) => (a.date === b.date ? b.createdAt.localeCompare(a.createdAt) : b.date.localeCompare(a.date)));
+    const sort = asStr(args.sort);
+    if (sort === "amount_high") txs.sort((a, b) => b.amount - a.amount);
+    else if (sort === "amount_low") txs.sort((a, b) => a.amount - b.amount);
+    else txs.sort((a, b) => (a.date === b.date ? b.createdAt.localeCompare(a.createdAt) : b.date.localeCompare(a.date)));
     return {
       period,
       count: txs.length,
