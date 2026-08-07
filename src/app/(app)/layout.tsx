@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { QuickAddSheet } from "@/components/transactions/quick-add-sheet";
+import { AssistantWidget } from "@/components/assistant/assistant-widget";
 import { SyncProvider } from "@/components/sync/sync-provider";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
@@ -19,6 +20,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       </div>
       <MobileNav />
       <QuickAddSheet />
+      <AssistantWidget />
       <SyncProvider />
     </AppGate>
   );
