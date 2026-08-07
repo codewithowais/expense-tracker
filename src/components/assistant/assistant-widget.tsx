@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, Paperclip, RotateCcw, Send, Sparkles, X } from "lucide-react";
+import { Bot, Check, Loader2, Paperclip, RotateCcw, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAssistant, type ImageInput } from "@/lib/assistant/use-assistant";
 import { cn } from "@/lib/utils";
@@ -100,7 +100,7 @@ export function AssistantWidget() {
           aria-label="Open assistant"
           className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lift transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:bottom-6 sm:right-6 print:hidden"
         >
-          <Sparkles className="size-6" />
+          <Bot className="size-6" />
         </button>
       ) : null}
 
@@ -111,7 +111,7 @@ export function AssistantWidget() {
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="grid size-8 place-items-center rounded-full bg-primary/10 text-primary">
-                <Sparkles className="size-4" />
+                <Bot className="size-4" />
               </span>
               <div className="leading-tight">
                 <p className="font-heading text-sm font-semibold">Assistant</p>

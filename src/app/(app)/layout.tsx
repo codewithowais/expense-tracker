@@ -4,6 +4,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { QuickAddSheet } from "@/components/transactions/quick-add-sheet";
 import { AssistantWidget } from "@/components/assistant/assistant-widget";
+import { ConnectivityToast } from "@/components/connectivity-toast";
 import { SyncProvider } from "@/components/sync/sync-provider";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
@@ -21,6 +22,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       <MobileNav />
       <QuickAddSheet />
       <AssistantWidget />
+      <ConnectivityToast />
       <SyncProvider />
     </AppGate>
   );
