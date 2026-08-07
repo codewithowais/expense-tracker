@@ -28,9 +28,11 @@ import { MoneyInput } from "@/components/shared/money-input";
 import { DateField } from "@/components/shared/date-field";
 import { ColorPicker } from "@/components/categories/color-picker";
 import { IconPicker } from "@/components/categories/icon-picker";
+import { LiveRateButton } from "./live-rate-button";
 import { assetRepo } from "@/lib/repositories/assets";
 import { assetSchema, type AssetFormValues } from "@/lib/schemas";
 import { ASSET_KINDS, ASSET_KIND_MAP, CATEGORY_COLORS } from "@/lib/constants";
+import { canFetchRate, isFetchableMetal } from "@/lib/rates";
 import { todayISO } from "@/lib/format";
 import type { Asset, AssetKind } from "@/lib/types";
 
@@ -278,9 +280,18 @@ export function AssetDialog({ open, onOpenChange, asset }: AssetDialogProps) {
 
           {unitPriced ? (
             <div className="space-y-1.5">
-              <Label htmlFor="asset-rate">
-                Current rate{unit ? ` (per ${unit})` : ""} — optional
-              </Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="asset-rate">
+                  Current rate{unit ? ` (per ${unit})` : ""} — optional
+                </Label>
+                {isFetchableMetal(kind) && canFetchRate(kind, unit ?? "") ? (
+                  <LiveRateButton
+                    metal={kind}
+                    unit={unit ?? ""}
+                    onRate={(v) => setValue("currentUnitPrice", v, { shouldValidate: true })}
+                  />
+                ) : null}
+              </div>
               <Controller
                 control={control}
                 name="currentUnitPrice"

@@ -14,7 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/shared/money-input";
+import { LiveRateButton } from "./live-rate-button";
 import { assetRepo } from "@/lib/repositories/assets";
+import { canFetchRate, isFetchableMetal } from "@/lib/rates";
 import type { Asset } from "@/lib/types";
 
 interface UpdateRateDialogProps {
@@ -77,9 +79,14 @@ function RateForm({ asset, onClose }: { asset: Asset; onClose: () => void }) {
       </DialogHeader>
 
       <div className="space-y-1.5">
-        <Label htmlFor="asset-rate-quick">
-          {unitPriced ? `Current rate${asset.unit ? ` (per ${asset.unit})` : ""}` : "Current value"}
-        </Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="asset-rate-quick">
+            {unitPriced ? `Current rate${asset.unit ? ` (per ${asset.unit})` : ""}` : "Current value"}
+          </Label>
+          {unitPriced && isFetchableMetal(asset.kind) && canFetchRate(asset.kind, asset.unit) ? (
+            <LiveRateButton metal={asset.kind} unit={asset.unit} onRate={setValue} />
+          ) : null}
+        </div>
         <MoneyInput id="asset-rate-quick" size="md" value={value} onChange={setValue} autoFocus />
       </div>
 
