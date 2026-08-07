@@ -60,8 +60,10 @@ export async function POST(req: NextRequest) {
   };
 
   try {
+    // v1beta is the endpoint that serves current models (gemini-2.5-flash) with
+    // systemInstruction + function-calling; v1 404s on newer models.
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -70,7 +72,6 @@ export async function POST(req: NextRequest) {
     );
 
     if (!res.ok) {
-      // Surface a short, safe hint without leaking key/internals.
       let detail = "";
       try {
         const err = (await res.json()) as { error?: { message?: string } };
@@ -78,12 +79,16 @@ export async function POST(req: NextRequest) {
       } catch {
         /* ignore */
       }
+      // Log the full upstream error server-side (visible in deploy logs).
+      console.error("[assistant] gemini", res.status, detail);
       const message =
         res.status === 429
           ? "The free AI limit was hit for now — try again in a minute."
-          : res.status === 400 && /API key/i.test(detail)
-            ? "The GEMINI_API_KEY looks invalid. Double-check it in your environment."
-            : "The assistant service had an error. Please try again.";
+          : /api[_ ]?key|invalid|permission|denied/i.test(detail)
+            ? "The GEMINI_API_KEY looks invalid or unauthorized — double-check it in your environment."
+            : detail
+              ? `Assistant error: ${detail.slice(0, 180)}`
+              : "The assistant service had an error. Please try again.";
       return NextResponse.json({ error: "upstream", message }, { status: 502 });
     }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { TransactionForm } from "./transaction-form";
 import {
   Sheet,
@@ -10,22 +11,40 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { transactionRepo } from "@/lib/repositories/transactions";
+import { useMoney, useCategories } from "@/lib/hooks/use-data";
 import { useQuickAdd } from "@/stores/ui-store";
 import type { TransactionFormValues } from "@/lib/schemas";
 
 /** App-wide create/edit transaction sheet, driven by the quick-add store. */
 export function QuickAddSheet() {
   const { open, editing, defaultType, close } = useQuickAdd();
+  const { fmt } = useMoney();
+  const categories = useCategories(true);
   const isEdit = Boolean(editing);
+
+  /** A richer confirmation snackbar: side-tinted icon + amount · category. */
+  function notifySaved(values: TransactionFormValues, updated: boolean) {
+    const income = values.type === "income";
+    const category = categories?.find((c) => c.id === values.categoryId)?.name;
+    const detail = [fmt(values.amount), category].filter(Boolean).join("  ·  ");
+    toast.success(updated ? "Transaction updated" : income ? "Income added" : "Expense added", {
+      description: detail,
+      icon: income ? (
+        <ArrowDownLeft className="size-4 text-income" />
+      ) : (
+        <ArrowUpRight className="size-4 text-expense" />
+      ),
+    });
+  }
 
   async function handleSubmit(values: TransactionFormValues) {
     try {
       if (editing) {
         await transactionRepo.update(editing.id, values);
-        toast.success("Transaction updated");
+        notifySaved(values, true);
       } else {
         await transactionRepo.create(values);
-        toast.success(values.type === "income" ? "Income added" : "Expense added");
+        notifySaved(values, false);
       }
       close();
     } catch {
