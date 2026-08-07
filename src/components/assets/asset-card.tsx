@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, RefreshCw, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -107,9 +107,9 @@ export function AssetCard({ valuation, onEdit, onUpdateRate }: AssetCardProps) {
           <button
             type="button"
             onClick={() => onUpdateRate(asset)}
-            className="mt-0.5 text-sm font-medium text-primary hover:underline"
+            className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
           >
-            Set current value →
+            <TrendingUp className="size-4" /> Set today’s rate to see profit
           </button>
         )}
       </div>

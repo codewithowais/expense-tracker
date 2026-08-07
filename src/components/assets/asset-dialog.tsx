@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CategoryIcon } from "@/components/shared/category-icon";
+import { Money } from "@/components/shared/money";
 import { MoneyInput } from "@/components/shared/money-input";
 import { DateField } from "@/components/shared/date-field";
 import { ColorPicker } from "@/components/categories/color-picker";
@@ -33,7 +34,7 @@ import { assetRepo } from "@/lib/repositories/assets";
 import { assetSchema, type AssetFormValues } from "@/lib/schemas";
 import { ASSET_KINDS, ASSET_KIND_MAP, CATEGORY_COLORS } from "@/lib/constants";
 import { canFetchRate, isFetchableMetal } from "@/lib/rates";
-import { todayISO } from "@/lib/format";
+import { formatPercent, todayISO } from "@/lib/format";
 import type { Asset, AssetKind } from "@/lib/types";
 
 interface AssetDialogProps {
@@ -94,10 +95,25 @@ export function AssetDialog({ open, onOpenChange, asset }: AssetDialogProps) {
   const icon = useWatch({ control, name: "icon" });
   const quantity = useWatch({ control, name: "quantity" });
   const unit = useWatch({ control, name: "unit" });
+  const purchaseAmount = useWatch({ control, name: "purchaseAmount" });
+  const extraCost = useWatch({ control, name: "extraCost" });
+  const currentUnitPrice = useWatch({ control, name: "currentUnitPrice" });
+  const currentValue = useWatch({ control, name: "currentValue" });
 
   // A quantity means this is unit-priced (rate per unit); otherwise it's a
   // lump-sum asset valued by a single current total.
   const unitPriced = quantity != null && !Number.isNaN(quantity);
+
+  // Live profit preview: mirrors valueAsset() so the user sees current value and
+  // gain/loss the moment both a purchase amount and a current figure are entered.
+  const costBasis = (purchaseAmount || 0) + (extraCost || 0);
+  const worth = unitPriced
+    ? quantity != null && !Number.isNaN(quantity) && currentUnitPrice != null
+      ? quantity * currentUnitPrice
+      : null
+    : (currentValue ?? null);
+  const gain = worth != null ? worth - costBasis : null;
+  const gainPct = gain != null && costBasis > 0 ? (gain / costBasis) * 100 : null;
 
   function onKindChange(next: AssetKind) {
     setValue("kind", next, { shouldValidate: true });
@@ -306,6 +322,7 @@ export function AssetDialog({ open, onOpenChange, asset }: AssetDialogProps) {
                 )}
               />
               {fieldError(errors.currentUnitPrice?.message)}
+              <p className="text-xs text-muted-foreground">Enter today’s rate (or tap “Use live rate”) to see your current value and profit below.</p>
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -324,8 +341,27 @@ export function AssetDialog({ open, onOpenChange, asset }: AssetDialogProps) {
                 )}
               />
               {fieldError(errors.currentValue?.message)}
+              <p className="text-xs text-muted-foreground">Enter today’s value to see your profit below.</p>
             </div>
           )}
+
+          {worth != null && costBasis > 0 ? (
+            <div className="rounded-2xl border border-border bg-muted/40 p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Current value</span>
+                <span className="font-heading font-semibold"><Money amount={worth} /></span>
+              </div>
+              {gain != null ? (
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-muted-foreground">{gain >= 0 ? "Profit" : "Loss"}</span>
+                  <span className="font-medium">
+                    <Money amount={gain} tone="net" signed />
+                    {gainPct != null ? ` (${formatPercent(Math.abs(gainPct), 1)})` : ""}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="space-y-1.5">
             <Label>Color</Label>
