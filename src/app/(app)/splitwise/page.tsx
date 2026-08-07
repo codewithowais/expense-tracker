@@ -17,7 +17,9 @@ export default function SplitwisePage() {
     try {
       const text = await file.text();
       const { group, added } = await splitwiseRepo.importHtml(text);
-      toast.success(`Imported ${added.toLocaleString()} entries from “${group}”`);
+      toast.success(`Imported ${added.toLocaleString()} entries from “${group}”`, {
+        description: "Balances added to People & Debts.",
+      });
     } catch {
       toast.error("Couldn’t read that file. Make sure it’s a Splitwise printable-summary HTML export.");
     } finally {
