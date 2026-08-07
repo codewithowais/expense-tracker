@@ -9,6 +9,7 @@ import { budgetRepo } from "@/lib/repositories/budgets";
 import { debtRepo, peopleRepo } from "@/lib/repositories/people";
 import { contributionRepo, savingsGoalRepo } from "@/lib/repositories/savings";
 import { assetRepo } from "@/lib/repositories/assets";
+import { splitwiseRepo } from "@/lib/repositories/splitwise";
 import { formatCurrency } from "@/lib/format";
 import type { AppSettings, Category, CurrencyCode } from "@/lib/types";
 
@@ -73,4 +74,8 @@ export function useContributionsByGoal(goalId: string) {
 
 export function useAssets() {
   return useLiveQuery(() => assetRepo.list(), []);
+}
+
+export function useSplitwiseReport() {
+  return useLiveQuery(() => splitwiseRepo.getReport(), []);
 }

@@ -1,5 +1,5 @@
 import {
-  ArrowLeftRight, BarChart3, FileText, Gem, LayoutDashboard, PiggyBank,
+  ArrowLeftRight, BarChart3, FileText, Gem, LayoutDashboard, PieChart, PiggyBank,
   Settings, Tags, Target, TrendingDown, TrendingUp, Users,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +31,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Income", href: "/income", icon: TrendingUp },
       { label: "Expenses", href: "/expenses", icon: TrendingDown },
       { label: "People & Debts", href: "/people", icon: Users },
+      { label: "Splitwise", href: "/splitwise", icon: PieChart },
     ],
   },
   {

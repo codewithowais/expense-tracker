@@ -10,6 +10,7 @@ import type {
   SavingsGoal,
   Transaction,
 } from "@/lib/types";
+import type { SplitwiseEntry, SplitwiseMeta } from "@/lib/splitwise/types";
 
 /** Local-only key/value row for sync bookkeeping (never synced upstream). */
 export interface MetaRow {
@@ -32,6 +33,10 @@ export class LedgerlyDB extends Dexie {
   savingsGoals!: EntityTable<SavingsGoal, "id">;
   savingsContributions!: EntityTable<SavingsContribution, "id">;
   assets!: EntityTable<Asset, "id">;
+  /** Local-only Splitwise archive (NOT synced) — kept off the sync path so a
+   *  large historical import never bloats sync or slows the rest of the app. */
+  splitwiseEntries!: EntityTable<SplitwiseEntry, "id">;
+  splitwiseMeta!: EntityTable<SplitwiseMeta, "id">;
   meta!: EntityTable<MetaRow, "key">;
 
   constructor(namespace: string) {
@@ -62,6 +67,13 @@ export class LedgerlyDB extends Dexie {
     // v4: Assets (gold, property, shares, …).
     this.version(4).stores({
       assets: "id, name, kind, updatedAt",
+    });
+    // v5: Splitwise archive (LOCAL only — intentionally absent from
+    // SYNCED_TABLES / SYNC_COLLECTIONS so it never touches the sync path).
+    // Indexed for scalable person / year / month queries over large imports.
+    this.version(5).stores({
+      splitwiseEntries: "id, person, date, year, ym, group, [person+ym]",
+      splitwiseMeta: "id",
     });
   }
 }
