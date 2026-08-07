@@ -176,14 +176,21 @@ export function useAssistant() {
   );
 
   const send = useCallback(
-    async (text: string, image?: ImageInput) => {
+    async (text: string, opts?: { image?: ImageInput; docText?: string; docName?: string }) => {
       const trimmed = text.trim();
-      if ((!trimmed && !image) || sending) return;
-      pushMessage("user", trimmed || "🧾 (receipt image)");
+      const image = opts?.image;
+      const docText = opts?.docText;
+      if ((!trimmed && !image && !docText) || sending) return;
+
+      const label = trimmed || (image ? "🧾 (receipt image)" : docText ? `📄 ${opts?.docName ?? "document"}` : "");
+      pushMessage("user", label);
 
       const parts: Part[] = [];
       if (image) parts.push({ inlineData: { mimeType: image.mimeType, data: image.data } });
-      parts.push({ text: trimmed || "Here is a receipt — add it as an expense." });
+      const modelText = docText
+        ? `${trimmed || "Extract and record the transaction(s) from this document."}\n\n[Document${opts?.docName ? ` "${opts.docName}"` : ""}]:\n${docText}`
+        : trimmed || "Here is a receipt — add it as an expense.";
+      parts.push({ text: modelText });
       contentsRef.current.push({ role: "user", parts });
 
       setSending(true);

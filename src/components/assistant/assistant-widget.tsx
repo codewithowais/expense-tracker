@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { useAssistant, type ImageInput } from "@/lib/assistant/use-assistant";
 import { cn } from "@/lib/utils";
 
+type Attachment =
+  | { kind: "image"; image: ImageInput; name: string }
+  | { kind: "pdf"; text: string; name: string };
+
 const SUGGESTIONS = [
   "Spent 500 on groceries today",
   "How much did I spend this month?",
@@ -30,7 +34,9 @@ export function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const { messages, sending, pending, send, confirm, cancel, reset } = useAssistant();
   const [input, setInput] = useState("");
-  const [image, setImage] = useState<{ data: ImageInput; name: string } | null>(null);
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [attaching, setAttaching] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -39,22 +45,46 @@ export function AssistantWidget() {
   }, [messages, pending, sending, open]);
 
   function handleSend() {
-    if (sending) return;
+    if (sending || attaching) return;
     const text = input;
-    const img = image?.data;
-    if (!text.trim() && !img) return;
+    const att = attachment;
+    if (!text.trim() && !att) return;
     setInput("");
-    setImage(null);
-    void send(text, img);
+    setAttachment(null);
+    setAttachError(null);
+    if (att?.kind === "image") void send(text, { image: att.image });
+    else if (att?.kind === "pdf") void send(text, { docText: att.text, docName: att.name });
+    else void send(text);
   }
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
+    setAttachError(null);
     try {
-      const data = await fileToImage(file);
-      setImage({ data, name: file.name });
+      const { mimeType, data } = await fileToImage(file);
+      if (mimeType === "application/pdf") {
+        // Extract text server-side (cheap tokens) instead of sending the PDF bytes.
+        setAttaching(true);
+        const res = await fetch("/api/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data, mimeType }),
+        });
+        const out = (await res.json().catch(() => ({}))) as { text?: string; note?: string };
+        if (!res.ok || !out.text) {
+          setAttachError(out.note ?? "Couldn't read that PDF. Try a photo instead.");
+          return;
+        }
+        setAttachment({ kind: "pdf", text: out.text, name: file.name });
+      } else if (mimeType.startsWith("image/")) {
+        setAttachment({ kind: "image", image: { mimeType, data }, name: file.name });
+      } else {
+        setAttachError("Unsupported file — attach an image or a PDF.");
+      }
     } catch {
-      /* ignore */
+      setAttachError("Couldn't read that file.");
+    } finally {
+      setAttaching(false);
     }
   }
 
@@ -161,20 +191,29 @@ export function AssistantWidget() {
 
           {/* Composer */}
           <div className="border-t border-border p-3">
-            {image ? (
+            {attaching ? (
+              <div className="mb-2 flex items-center gap-2 rounded-lg bg-muted px-2 py-1 text-xs text-muted-foreground">
+                <Loader2 className="size-3.5 animate-spin" /> Reading file…
+              </div>
+            ) : attachment ? (
               <div className="mb-2 flex items-center gap-2 rounded-lg bg-muted px-2 py-1 text-xs">
                 <Paperclip className="size-3.5" />
-                <span className="min-w-0 flex-1 truncate">{image.name}</span>
-                <button type="button" aria-label="Remove image" onClick={() => setImage(null)}>
+                <span className="min-w-0 flex-1 truncate">
+                  {attachment.name}
+                  {attachment.kind === "pdf" ? " · text extracted" : ""}
+                </span>
+                <button type="button" aria-label="Remove attachment" onClick={() => setAttachment(null)}>
                   <X className="size-3.5" />
                 </button>
               </div>
+            ) : attachError ? (
+              <p className="mb-2 text-xs text-expense">{attachError}</p>
             ) : null}
             <div className="flex items-end gap-2">
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf"
                 className="hidden"
                 onChange={(e) => void handleFile(e.target.files?.[0])}
               />
@@ -182,9 +221,9 @@ export function AssistantWidget() {
                 variant="ghost"
                 size="icon"
                 className="shrink-0 rounded-full"
-                aria-label="Attach receipt"
+                aria-label="Attach receipt or PDF"
                 onClick={() => fileRef.current?.click()}
-                disabled={sending}
+                disabled={sending || attaching}
               >
                 <Paperclip className="size-[1.1rem]" />
               </Button>
@@ -206,7 +245,7 @@ export function AssistantWidget() {
                 className="shrink-0 rounded-full"
                 aria-label="Send"
                 onClick={handleSend}
-                disabled={sending || (!input.trim() && !image)}
+                disabled={sending || attaching || (!input.trim() && !attachment)}
               >
                 <Send className="size-[1.1rem]" />
               </Button>
