@@ -39,21 +39,32 @@ interface TransactionListProps {
 
 const methodLabel = (v: string) => PAYMENT_METHODS.find((m) => m.value === v)?.label ?? v;
 
+/** How many rows to render at once; more load on demand. Keeps the DOM light
+ *  and the list fast no matter how large the dataset grows. */
+const PAGE = 60;
+
 export function TransactionList({ transactions, categories, grouped = true }: TransactionListProps) {
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const openEdit = useQuickAdd((s) => s.openEdit);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
 
+  // Window the rendered rows so the DOM stays light regardless of dataset size.
+  // `slice` clamps automatically when the underlying list shrinks.
+  const [visible, setVisible] = useState(PAGE);
+
+  const total = transactions.length;
+  const shown = useMemo(() => transactions.slice(0, visible), [transactions, visible]);
+
   const groups = useMemo(() => {
-    if (!grouped) return [["", transactions]] as [string, Transaction[]][];
+    if (!grouped) return [["", shown]] as [string, Transaction[]][];
     const map = new Map<string, Transaction[]>();
-    for (const t of transactions) {
+    for (const t of shown) {
       const arr = map.get(t.date) ?? [];
       arr.push(t);
       map.set(t.date, arr);
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [transactions, grouped]);
+  }, [shown, grouped]);
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -102,6 +113,22 @@ export function TransactionList({ transactions, categories, grouped = true }: Tr
             </ul>
           </div>
         ))}
+
+        {total > visible ? (
+          <div className="flex flex-col items-center gap-2 pt-1">
+            <p className="text-xs text-muted-foreground tabular-nums">
+              Showing {visible.toLocaleString()} of {total.toLocaleString()}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setVisible((v) => v + PAGE)}>
+                Show more
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setVisible(total)}>
+                Show all
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(v) => !v && setPendingDelete(null)}>
