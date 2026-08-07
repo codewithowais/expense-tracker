@@ -12,7 +12,7 @@ import { categoryRepo } from "@/lib/repositories/categories";
 import { budgetRepo } from "@/lib/repositories/budgets";
 import { assetRepo } from "@/lib/repositories/assets";
 import { savingsGoalRepo, contributionRepo } from "@/lib/repositories/savings";
-import { byCategory, savingsRate, totals } from "@/lib/analytics";
+import { budgetProgress, byCategory, savingsRate, totals } from "@/lib/analytics";
 import { summarizeAssets } from "@/lib/assets";
 import { presetRange, inRange, type PresetKey } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
@@ -130,6 +130,34 @@ export async function runReadTool(
         note: t.note,
         method: t.method,
       })),
+    };
+  }
+
+  if (name === "get_budgets") {
+    const [allTx, cats, budgets] = await Promise.all([
+      transactionRepo.all(),
+      categoryRepo.list(true),
+      budgetRepo.list(),
+    ]);
+    // Budgets are always evaluated against the CURRENT budgeting month.
+    const monthRange = presetRange("this-month", new Date(), ctx.monthStartDay);
+    const monthTxs = allTx.filter((t) => inRange(t.date, monthRange));
+    const progress = budgetProgress(budgets, monthTxs, cats);
+    return {
+      currency: ctx.currency,
+      hasBudgets: budgets.length > 0,
+      monthExpenseSoFar: totals(monthTxs).expense,
+      budgets: progress.map((p) => ({
+        name: p.label,
+        limit: p.limit,
+        spent: p.spent,
+        remaining: p.remaining,
+        pctUsed: Math.round(p.pct),
+        status: p.status,
+      })),
+      note: budgets.length
+        ? "remaining = limit − spent this month; status over/warning/under."
+        : "No budgets set yet — offer to set one, e.g. 'set a 20000 food budget'.",
     };
   }
 

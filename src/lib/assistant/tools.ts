@@ -67,6 +67,12 @@ export const FUNCTION_DECLARATIONS: GeminiFunctionDeclaration[] = [
     parameters: { type: "object", properties: {} },
   },
   {
+    name: "get_budgets",
+    description:
+      "Get this month's budgets with limit, spent, and remaining (overall and per category). Use for 'how much can I still spend', 'how much is left in my budget', or 'am I over budget'.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
     name: "add_transaction",
     description:
       "Record a new income or expense. The app shows the user a confirmation before saving, so call this as soon as you have an amount — do not ask the user to confirm yourself.",
