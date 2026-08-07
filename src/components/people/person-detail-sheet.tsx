@@ -57,6 +57,12 @@ export function PersonDetailSheet({ personId, onOpenChange }: PersonDetailSheetP
   const balance = balanceOf(entries ?? []);
   const open = personId !== null;
 
+  // Window the history so a person with years of entries stays fast.
+  const PAGE = 60;
+  const [visible, setVisible] = useState(PAGE);
+  const total = entries?.length ?? 0;
+  const shownEntries = entries ? entries.slice(0, visible) : [];
+
   const caption =
     balance > 0
       ? `${person?.name ?? "They"} owes you`
@@ -164,7 +170,7 @@ export function PersonDetailSheet({ personId, onOpenChange }: PersonDetailSheetP
                   </p>
                 ) : (
                   <ul className="overflow-hidden rounded-2xl border border-border bg-card">
-                    {entries.map((e, i) => (
+                    {shownEntries.map((e, i) => (
                       <li
                         key={e.id}
                         className={
@@ -215,6 +221,21 @@ export function PersonDetailSheet({ personId, onOpenChange }: PersonDetailSheetP
                     ))}
                   </ul>
                 )}
+                {total > visible ? (
+                  <div className="flex flex-col items-center gap-2 pt-1">
+                    <p className="text-xs tabular-nums text-muted-foreground">
+                      Showing {visible.toLocaleString()} of {total.toLocaleString()}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setVisible((v) => v + PAGE)}>
+                        Show more
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setVisible(total)}>
+                        Show all
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </>
           ) : null}
