@@ -30,7 +30,7 @@ import { DebtEntryDialog } from "@/components/people/debt-entry-dialog";
 import { balanceOf, debtKindLabel, entryDelta } from "@/lib/debts";
 import { formatDate } from "@/lib/format";
 import { peopleRepo, debtRepo } from "@/lib/repositories/people";
-import { useDebtEntriesByPerson, usePeople, useSplitwiseByPerson } from "@/lib/hooks/use-data";
+import { useDebtEntriesByPerson, usePeople } from "@/lib/hooks/use-data";
 import type { DebtEntry, DebtKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -42,14 +42,12 @@ export default function PersonDetailPage() {
   const people = usePeople();
   const entries = useDebtEntriesByPerson(id);
   const person = useMemo(() => people?.find((p) => p.id === id), [people, id]);
-  const swEntries = useSplitwiseByPerson(person?.name);
 
   const [editPersonOpen, setEditPersonOpen] = useState(false);
   const [deletePersonOpen, setDeletePersonOpen] = useState(false);
   const [entryDialog, setEntryDialog] = useState<{ entry?: DebtEntry; kind?: DebtKind } | null>(null);
   const [pendingDeleteEntry, setPendingDeleteEntry] = useState<DebtEntry | null>(null);
   const [visible, setVisible] = useState(PAGE);
-  const [swVisible, setSwVisible] = useState(PAGE);
 
   const ready = Boolean(people && entries);
   const balance = balanceOf(entries ?? []);
@@ -69,8 +67,6 @@ export default function PersonDetailPage() {
 
   const total = entries?.length ?? 0;
   const shown = entries ? entries.slice(0, visible) : [];
-  const swTotal = swEntries?.length ?? 0;
-  const swShown = swEntries ? swEntries.slice(0, swVisible) : [];
 
   async function confirmDeletePerson() {
     if (!person) return;
@@ -242,51 +238,6 @@ export default function PersonDetailPage() {
               </>
             )}
           </section>
-
-          {/* Splitwise history (imported archive) */}
-          {swTotal > 0 ? (
-            <section className="space-y-3">
-              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Splitwise history
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[0.7rem] font-medium normal-case tracking-normal text-muted-foreground tabular-nums">
-                  {swTotal.toLocaleString()}
-                </span>
-              </h2>
-              <ul className="overflow-hidden rounded-2xl border border-border bg-card">
-                {swShown.map((e) => (
-                  <li key={e.id} className="flex items-center gap-3 border-b border-border px-3 py-3 last:border-b-0 sm:px-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-foreground">{e.description || "Expense"}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {formatDate(e.date)} · {e.group}
-                      </p>
-                    </div>
-                    <Money
-                      amount={Math.abs(e.delta)}
-                      tone={e.delta >= 0 ? "income" : "expense"}
-                      signed
-                      className="text-sm font-semibold"
-                    />
-                  </li>
-                ))}
-              </ul>
-              {swTotal > swVisible ? (
-                <div className="flex flex-col items-center gap-2 pt-1">
-                  <p className="text-xs tabular-nums text-muted-foreground">
-                    Showing {swVisible.toLocaleString()} of {swTotal.toLocaleString()}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setSwVisible((v) => v + PAGE)}>
-                      Show more
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setSwVisible(swTotal)}>
-                      Show all
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
         </>
       )}
 
