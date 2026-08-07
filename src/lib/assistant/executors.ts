@@ -7,7 +7,7 @@
  * the UI can show a confirmation card before run() actually commits.
  */
 
-import { transactionRepo } from "@/lib/repositories/transactions";
+import { transactionRepo, type TransactionInput } from "@/lib/repositories/transactions";
 import { categoryRepo } from "@/lib/repositories/categories";
 import { budgetRepo } from "@/lib/repositories/budgets";
 import { assetRepo } from "@/lib/repositories/assets";
@@ -15,12 +15,12 @@ import { savingsGoalRepo, contributionRepo } from "@/lib/repositories/savings";
 import { peopleRepo, debtRepo } from "@/lib/repositories/people";
 import { budgetProgress, byCategory, monthlySeries, savingsRate, totals } from "@/lib/analytics";
 import { summarizeAssets } from "@/lib/assets";
-import { summarizePeople } from "@/lib/debts";
+import { summarizePeople, debtKindLabel } from "@/lib/debts";
 import { summarizeGoals } from "@/lib/savings";
 import { presetRange, inRange, type PresetKey } from "@/lib/dates";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, roundMoney } from "@/lib/format";
 import { CATEGORY_COLORS, ASSET_KIND_MAP } from "@/lib/constants";
-import type { AssetKind, Category, CurrencyCode, TxType } from "@/lib/types";
+import type { AssetKind, Category, CurrencyCode, DebtKind, PaymentMethod, TxType } from "@/lib/types";
 
 export interface AssistantContext {
   today: string;
@@ -129,6 +129,7 @@ export async function runReadTool(
       period,
       count: txs.length,
       transactions: txs.slice(0, limit).map((t) => ({
+        id: t.id,
         date: t.date,
         type: t.type,
         amount: t.amount,
@@ -256,6 +257,29 @@ export async function runReadTool(
     };
   }
 
+  if (name === "get_net_worth") {
+    const [allTx, assets, people, entries] = await Promise.all([
+      transactionRepo.all(),
+      assetRepo.list(),
+      peopleRepo.list(),
+      debtRepo.all(),
+    ]);
+    const ledgerBalance = totals(allTx).net;
+    const assetsValue = summarizeAssets(assets).totalWorth;
+    const debts = summarizePeople(people, entries);
+    return {
+      currency: ctx.currency,
+      netWorth: roundMoney(ledgerBalance + assetsValue + debts.net),
+      breakdown: {
+        ledgerBalance,
+        assetsValue,
+        owedToYou: debts.owedToYou,
+        youOwe: debts.youOwe,
+      },
+      note: "netWorth = ledgerBalance (all-time income − expenses, a proxy for cash) + assetsValue + (owedToYou − youOwe). The app doesn't track bank balances directly.",
+    };
+  }
+
   return { error: `Unknown read tool: ${name}` };
 }
 
@@ -269,6 +293,10 @@ export async function prepareWriteTool(
   switch (name) {
     case "add_transaction":
       return prepareAddTransaction(args, ctx);
+    case "edit_transaction":
+      return prepareEditTransaction(args, ctx);
+    case "delete_transaction":
+      return prepareDeleteTransaction(args, ctx);
     case "add_asset":
       return prepareAddAsset(args, ctx);
     case "update_asset_value":
@@ -277,6 +305,10 @@ export async function prepareWriteTool(
       return prepareSetBudget(args, ctx);
     case "add_savings_contribution":
       return prepareAddSavings(args, ctx);
+    case "add_savings_goal":
+      return prepareAddSavingsGoal(args, ctx);
+    case "add_debt":
+      return prepareAddDebt(args, ctx);
     default:
       return { error: `Unknown tool: ${name}` };
   }
@@ -465,6 +497,157 @@ async function prepareAddSavings(
     run: async () => {
       await contributionRepo.create({ goalId: goal.id, amount, note: "", date });
       return { saved: true, goal: goal.name, amount };
+    },
+  };
+}
+
+const METHODS = ["cash", "card", "bank", "wallet", "other"];
+
+async function prepareEditTransaction(
+  args: Record<string, unknown>,
+  ctx: AssistantContext,
+): Promise<PreparedWrite | { error: string }> {
+  const id = asStr(args.id);
+  if (!id) return { error: "Which transaction? Call list_transactions first to get its id." };
+  const tx = await transactionRepo.get(id);
+  if (!tx || tx.deletedAt) return { error: "That transaction wasn't found." };
+
+  const patch: Partial<TransactionInput> = {};
+  const changes: string[] = [];
+
+  const amount = asNum(args.amount);
+  if (amount != null) {
+    if (amount <= 0) return { error: "Amount must be greater than zero." };
+    patch.amount = amount;
+    changes.push(`amount → ${fmt(amount, ctx)}`);
+  }
+  if (args.note !== undefined) {
+    patch.note = asStr(args.note) ?? "";
+    changes.push(`note → "${patch.note}"`);
+  }
+  const date = asStr(args.date);
+  if (date) {
+    if (!ISO.test(date)) return { error: "Invalid date." };
+    patch.date = date;
+    changes.push(`date → ${date}`);
+  }
+  const method = asStr(args.method);
+  if (method) {
+    if (!METHODS.includes(method)) return { error: "Invalid payment method." };
+    patch.method = method as PaymentMethod;
+    changes.push(`method → ${method}`);
+  }
+
+  const catName = asStr(args.category);
+  let resolvedCat: { id?: string; create?: boolean } | null = null;
+  if (catName) {
+    const cats = await categoryRepo.list(true);
+    const match = matchCategory(cats, catName, tx.type);
+    resolvedCat = match ? { id: match.id } : { create: true };
+    changes.push(`category → ${catName}${match ? "" : " (new)"}`);
+  }
+
+  if (changes.length === 0) return { error: "Tell me what to change (amount, note, category, date, or method)." };
+
+  const summary = `Update transaction (${fmt(tx.amount, ctx)} on ${tx.date}): ${changes.join(", ")}`;
+  return {
+    summary,
+    run: async () => {
+      if (catName && resolvedCat) {
+        if (resolvedCat.id) {
+          patch.categoryId = resolvedCat.id;
+        } else {
+          const created = await categoryRepo.create({
+            name: catName,
+            type: tx.type,
+            color: CATEGORY_COLORS[0],
+            icon: "ReceiptText",
+          });
+          patch.categoryId = created.id;
+        }
+      }
+      await transactionRepo.update(id, patch);
+      return { saved: true, id };
+    },
+  };
+}
+
+async function prepareDeleteTransaction(
+  args: Record<string, unknown>,
+  ctx: AssistantContext,
+): Promise<PreparedWrite | { error: string }> {
+  const id = asStr(args.id);
+  if (!id) return { error: "Which transaction? Call list_transactions first to get its id." };
+  const tx = await transactionRepo.get(id);
+  if (!tx || tx.deletedAt) return { error: "That transaction wasn't found." };
+  const cats = await categoryRepo.list(true);
+  const catName = cats.find((c) => c.id === tx.categoryId)?.name ?? "Uncategorized";
+  const summary = `Delete ${tx.type} · ${fmt(tx.amount, ctx)} · ${catName}${tx.note ? ` · ${tx.note}` : ""} · ${tx.date}`;
+  return {
+    summary,
+    run: async () => {
+      await transactionRepo.remove(id);
+      return { deleted: true, id };
+    },
+  };
+}
+
+async function prepareAddSavingsGoal(
+  args: Record<string, unknown>,
+  ctx: AssistantContext,
+): Promise<PreparedWrite | { error: string }> {
+  const name = asStr(args.name);
+  const target = asNum(args.target);
+  if (!name) return { error: "A goal name is required." };
+  if (target == null || target <= 0) return { error: "A target amount is required." };
+  const targetDate = asStr(args.targetDate) && ISO.test(args.targetDate as string) ? (args.targetDate as string) : null;
+  const summary = `Create savings goal · ${name} · target ${fmt(target, ctx)}${targetDate ? ` by ${targetDate}` : ""}`;
+  return {
+    summary,
+    run: async () => {
+      const g = await savingsGoalRepo.create({
+        name,
+        target,
+        note: "",
+        color: CATEGORY_COLORS[0],
+        icon: "PiggyBank",
+        targetDate,
+      });
+      return { saved: true, id: g.id, name };
+    },
+  };
+}
+
+async function prepareAddDebt(
+  args: Record<string, unknown>,
+  ctx: AssistantContext,
+): Promise<PreparedWrite | { error: string }> {
+  const personName = asStr(args.person);
+  const kind = asStr(args.kind) as DebtKind | undefined;
+  const amount = asNum(args.amount);
+  if (!personName) return { error: "Whose debt? A person's name is required." };
+  if (!kind || !["lent", "borrowed", "repaid", "received"].includes(kind)) {
+    return { error: "kind must be lent, borrowed, repaid, or received." };
+  }
+  if (amount == null || amount <= 0) return { error: "An amount is required." };
+  const date = asStr(args.date) && ISO.test(args.date as string) ? (args.date as string) : ctx.today;
+
+  const people = await peopleRepo.list();
+  const q = personName.toLowerCase();
+  const existing =
+    people.find((p) => p.name.toLowerCase() === q) ?? people.find((p) => p.name.toLowerCase().includes(q));
+
+  const summary = `${debtKindLabel(kind)} ${fmt(amount, ctx)} · ${existing ? existing.name : `${personName} (new)`} · ${date}`;
+  return {
+    summary,
+    run: async () => {
+      let personId = existing?.id;
+      if (!personId) {
+        const p = await peopleRepo.create({ name: personName });
+        personId = p.id;
+      }
+      await debtRepo.create({ personId, kind, amount, note: "", date });
+      return { saved: true, person: existing ? existing.name : personName, kind, amount };
     },
   };
 }

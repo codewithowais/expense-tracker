@@ -13,8 +13,10 @@ type Attachment =
 const SUGGESTIONS = [
   "Spent 500 on groceries today",
   "How much did I spend this month?",
+  "How much can I still spend?",
   "What's my net worth?",
-  "Add 120000 salary income",
+  "Who owes me money?",
+  "Show my 6-month spending trend",
 ];
 
 function fileToImage(file: File): Promise<ImageInput> {
