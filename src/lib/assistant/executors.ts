@@ -12,8 +12,11 @@ import { categoryRepo } from "@/lib/repositories/categories";
 import { budgetRepo } from "@/lib/repositories/budgets";
 import { assetRepo } from "@/lib/repositories/assets";
 import { savingsGoalRepo, contributionRepo } from "@/lib/repositories/savings";
-import { budgetProgress, byCategory, savingsRate, totals } from "@/lib/analytics";
+import { peopleRepo, debtRepo } from "@/lib/repositories/people";
+import { budgetProgress, byCategory, monthlySeries, savingsRate, totals } from "@/lib/analytics";
 import { summarizeAssets } from "@/lib/assets";
+import { summarizePeople } from "@/lib/debts";
+import { summarizeGoals } from "@/lib/savings";
 import { presetRange, inRange, type PresetKey } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import { CATEGORY_COLORS, ASSET_KIND_MAP } from "@/lib/constants";
@@ -181,6 +184,74 @@ export async function runReadTool(
         currentValue: v.worth,
         gainLoss: v.gain,
         gainPct: v.gainPct,
+      })),
+    };
+  }
+
+  if (name === "get_category_breakdown") {
+    const [allTx, cats] = await Promise.all([transactionRepo.all(), categoryRepo.list(true)]);
+    const type = (asStr(args.type) as TxType) === "income" ? "income" : "expense";
+    const txs = allTx.filter((t) => inRange(t.date, range));
+    const slices = byCategory(txs, cats, type);
+    return {
+      period,
+      type,
+      currency: ctx.currency,
+      total: totals(txs)[type],
+      categories: slices.map((s) => ({
+        name: s.category?.name ?? "Uncategorized",
+        total: s.total,
+        pct: Math.round(s.pct),
+      })),
+    };
+  }
+
+  if (name === "get_spending_trend") {
+    const allTx = await transactionRepo.all();
+    const trendRange = presetRange("last-6-months", new Date(), ctx.monthStartDay);
+    const txs = allTx.filter((t) => inRange(t.date, trendRange));
+    return {
+      currency: ctx.currency,
+      note: "Last 6 months, oldest to newest.",
+      months: monthlySeries(txs, trendRange).map((m) => ({
+        month: m.label,
+        income: m.income,
+        expense: m.expense,
+        net: m.net,
+      })),
+    };
+  }
+
+  if (name === "get_debts") {
+    const [people, entries] = await Promise.all([peopleRepo.list(), debtRepo.all()]);
+    const { summaries, owedToYou, youOwe, net } = summarizePeople(people, entries);
+    return {
+      currency: ctx.currency,
+      owedToYou,
+      youOwe,
+      netOwedToYou: net,
+      note: "balance > 0 means they owe you; balance < 0 means you owe them.",
+      people: summaries
+        .filter((s) => s.balance !== 0)
+        .map((s) => ({ name: s.person.name, balance: s.balance })),
+    };
+  }
+
+  if (name === "get_savings") {
+    const [goals, contribs] = await Promise.all([savingsGoalRepo.list(), contributionRepo.all()]);
+    const { progress, totalSaved, totalTarget, overallPct } = summarizeGoals(goals, contribs);
+    return {
+      currency: ctx.currency,
+      totalSaved,
+      totalTarget,
+      overallPct: Math.round(overallPct),
+      goals: progress.map((p) => ({
+        name: p.goal.name,
+        saved: p.saved,
+        target: p.target,
+        remaining: p.remaining,
+        pct: Math.round(p.pct),
+        complete: p.complete,
       })),
     };
   }
