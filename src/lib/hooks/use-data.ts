@@ -79,3 +79,8 @@ export function useAssets() {
 export function useSplitwiseReport() {
   return useLiveQuery(() => splitwiseRepo.getReport(), []);
 }
+
+/** A person's imported Splitwise line items (by name), newest first. */
+export function useSplitwiseByPerson(name: string | undefined) {
+  return useLiveQuery(() => (name ? splitwiseRepo.listByPerson(name) : Promise.resolve([])), [name]);
+}

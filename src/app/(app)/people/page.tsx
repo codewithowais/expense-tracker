@@ -8,9 +8,9 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { StatCardsSkeleton, LoadingPanel } from "@/components/shared/states";
 import { Money } from "@/components/shared/money";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { PersonDialog } from "@/components/people/person-dialog";
 import { DebtEntryDialog } from "@/components/people/debt-entry-dialog";
-import { PersonDetailSheet } from "@/components/people/person-detail-sheet";
 import { summarizePeople } from "@/lib/debts";
 import { relativeDay } from "@/lib/format";
 import { useDebtEntries, usePeople } from "@/lib/hooks/use-data";
@@ -22,7 +22,6 @@ export default function PeoplePage() {
 
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [debtDialogOpen, setDebtDialogOpen] = useState(false);
-  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
   const { summaries, owedToYou, youOwe, net } = useMemo(
     () => summarizePeople(people ?? [], entries ?? []),
@@ -103,10 +102,9 @@ export default function PeoplePage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {summaries.map(({ person, balance, entryCount, lastActivity }) => (
-              <button
+              <Link
                 key={person.id}
-                type="button"
-                onClick={() => setSelectedPersonId(person.id)}
+                href={`/people/${person.id}`}
                 className="card-interactive flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-accent/40"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
@@ -129,7 +127,7 @@ export default function PeoplePage() {
                     {lastActivity ? ` · ${relativeDay(lastActivity)}` : ""}
                   </p>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
         </>
@@ -137,10 +135,6 @@ export default function PeoplePage() {
 
       <PersonDialog open={personDialogOpen} onOpenChange={setPersonDialogOpen} />
       <DebtEntryDialog open={debtDialogOpen} onOpenChange={setDebtDialogOpen} />
-      <PersonDetailSheet
-        personId={selectedPersonId}
-        onOpenChange={(v) => !v && setSelectedPersonId(null)}
-      />
     </div>
   );
 }
