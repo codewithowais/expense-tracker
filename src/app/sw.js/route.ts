@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
  * strategy below (when online we always pull from the server and refresh the
  * cache), so there's no need to invalidate caches on every deploy.
  */
-const SCHEMA = "1";
+const SCHEMA = "2";
 
 const SERVICE_WORKER = `/*
  * Ledgerly service worker (schema ${SCHEMA}).
@@ -102,12 +102,18 @@ function isImmutable(url) {
 async function cacheFirst(req) {
   const cached = await caches.match(req);
   if (cached) return cached;
-  const res = await fetch(req);
-  if (res && res.ok) {
-    const copy = res.clone();
-    caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
+  try {
+    const res = await fetch(req);
+    if (res && res.ok) {
+      const copy = res.clone();
+      caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
+    }
+    return res;
+  } catch (err) {
+    // Offline and not cached — resolve to a network-error Response so the
+    // fetch handler never rejects (which would log an "Uncaught (in promise)").
+    return Response.error();
   }
-  return res;
 }
 
 // A branded, auto-reconnecting loader shown only when a navigation fails AND
@@ -159,7 +165,10 @@ async function networkFirst(req) {
         status: 503,
       });
     }
-    throw err;
+    // Non-navigation with no cache: resolve to a network-error Response instead
+    // of re-throwing, so respondWith never rejects (no console error flood).
+    // The page's own fetch still sees a normal network failure and can handle it.
+    return Response.error();
   }
 }
 
