@@ -23,14 +23,36 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const SITE_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const SITE_DESCRIPTION =
+  "Ledgerly is an open-source, local-first personal finance & expense tracker PWA — offline budgeting, net-worth & asset tracking, debt splitting, Splitwise import, and an AI finance assistant. A privacy-first Mint/YNAB/Splitwise alternative.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Ledgerly — Personal Finance",
+    default: "Ledgerly — Open-Source Local-First Expense Tracker & Budget App",
     template: "%s · Ledgerly",
   },
-  description:
-    "A calm, premium expense tracker. Track income and spending, set budgets, and see where your money goes.",
+  description: SITE_DESCRIPTION,
   applicationName: "Ledgerly",
+  keywords: [
+    "expense tracker",
+    "personal finance",
+    "budgeting app",
+    "money manager",
+    "local-first",
+    "offline budgeting app",
+    "self-hosted finance app",
+    "net worth tracker",
+    "Mint alternative",
+    "YNAB alternative",
+    "Splitwise alternative",
+    "AI finance assistant",
+    "open source",
+    "PWA",
+  ],
+  authors: [{ name: "Owais Ahmed", url: "https://github.com/codewithowais" }],
+  creator: "Owais Ahmed",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -40,6 +62,20 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Ledgerly",
+    title: "Ledgerly — Open-Source Local-First Expense Tracker & Budget App",
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Ledgerly — local-first personal finance tracker" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ledgerly — Open-Source Local-First Expense Tracker",
+    description: SITE_DESCRIPTION,
+    images: ["/og.png"],
   },
 };
 

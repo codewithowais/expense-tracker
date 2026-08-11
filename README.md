@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="public/og.png" alt="Ledgerly — open-source, local-first personal finance & expense tracker" width="100%" />
+
 # 💸 Ledgerly — Open-Source, Local-First Personal Finance & Expense Tracker
 
 ### A private, offline-first money manager with an AI finance assistant, asset & net-worth tracking, budgets, savings goals, debt splitting, and Splitwise import — built with Next.js 16, React 19 & TypeScript.
