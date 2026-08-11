@@ -4,7 +4,7 @@
 
 ### A private, offline-first money manager with an AI finance assistant, asset & net-worth tracking, budgets, savings goals, debt splitting, and Splitwise import — built with Next.js 16, React 19 & TypeScript.
 
-**Own your money data.** No accounts sold to advertisers, no bank logins, no cloud lock-in. Everything lives in your browser first, with **optional** encrypted-at-rest sync to *your own* database.
+**Own your money data.** No ads, no data-selling, no bank connections, no third-party cloud. **Self-host your own instance** — you sign in to *your* server, your data lives in your browser first, and sync (optional) goes only to *your own* database.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
@@ -53,8 +53,8 @@
 ### 🔒 Privacy, offline & sync
 - **Local-first** — data lives in your browser (IndexedDB); the app works fully **offline**.
 - **Blur-amounts privacy toggle** — hide every number instantly (reveal on focus) for shoulder-surfing safety.
-- **App lock (PIN)** — a 4-digit PIN validated server-side, identical on every device.
-- **Optional two-way sync** — last-write-wins sync to **your own** Neon Postgres. Nothing goes to us — ever.
+- **Account sign-in** — email + password via [Better Auth](https://better-auth.com), with an optional per-user **4-digit PIN** quick-unlock validated server-side. Multi-tenant, with an admin role and a closed (allowlist/invite) sign-up.
+- **Optional two-way sync** — last-write-wins sync to **your own** Neon Postgres, authenticated by your session. Nothing goes to any third party — ever.
 - **Import/export** — JSON backup/restore + CSV transactions import/export.
 - **Installable PWA** with auto-update, plus **light + dark** themes and full **accessibility**.
 
@@ -81,11 +81,26 @@
 
 ## 📸 Screenshots
 
-> _Add your screenshots to `docs/screenshots/` and reference them here._
+> Shown with built-in **sample data** — your real numbers stay on your device.
 
-| Dashboard | Transactions | AI Assistant |
-|---|---|---|
-| _dashboard.png_ | _transactions.png_ | _assistant.png_ |
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Ledgerly dashboard — net balance, savings rate, cash-flow trend and spending breakdown" width="100%" />
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/transactions.png" alt="Searchable, filterable transactions ledger" /><br/><sub><b>Transactions</b> — fast, searchable, filterable ledger</sub></td>
+    <td width="50%"><img src="docs/screenshots/analytics.png" alt="Analytics — income vs expense trends and category breakdown" /><br/><sub><b>Analytics</b> — trends, donuts &amp; insights</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/assets.png" alt="Assets and net worth tracker with gain/loss" /><br/><sub><b>Assets</b> — net worth, cost basis &amp; live gain/loss</sub></td>
+    <td width="50%"><img src="docs/screenshots/splitwise.png" alt="Splitwise import and insights by person, year and month" /><br/><sub><b>Splitwise</b> — import history &amp; insights</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/budgets.png" alt="Monthly budgets with live progress" /><br/><sub><b>Budgets</b> — monthly limits with live progress</sub></td>
+    <td width="50%"><img src="docs/screenshots/people.png" alt="People and debts — track who owes whom" /><br/><sub><b>People &amp; Debts</b> — track who owes whom</sub></td>
+  </tr>
+</table>
 
 ---
 
@@ -101,18 +116,30 @@ cp .env.example .env    # then edit .env (see table below)
 npm run dev
 ```
 
-Open **http://localhost:3000**. On first run you'll be guided through a short setup (name, currency, optional sample data).
-
 ### Environment (`.env`)
+
+Ledgerly uses [Better Auth](https://better-auth.com) accounts on a Postgres database you control, so the four core vars below are required. The AI assistant is optional.
 
 | Variable | Purpose |
 | --- | --- |
-| `APP_PIN` | 4-digit app-lock PIN, validated server-side. Same on every device. Leave blank to disable the lock. |
-| `DATABASE_URL` | Neon Postgres connection string for optional cloud sync (`npx neonctl@latest init`). Leave blank to run fully offline. |
+| `DATABASE_URL` | Neon/Postgres **pooled** connection string (`npx neonctl@latest init`). Holds the Better Auth tables and the per-user synced ledger. **Required.** |
+| `BETTER_AUTH_SECRET` | Session-signing secret. **Required.** Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
+| `BETTER_AUTH_URL` | The canonical origin the app is served from — `http://localhost:3000` in dev, your domain in prod. |
+| `ADMIN_EMAIL` | The email that becomes the **super-admin** on sign-up (manages the signup allowlist / invites). This makes *you* the owner of your instance. |
 | `GEMINI_API_KEY` | Google Gemini API key (`AIza…`) to enable the AI assistant. Free from [Google AI Studio](https://aistudio.google.com/apikey). Leave blank to hide the assistant. |
-| `SYNC_SECRET` / `NEXT_PUBLIC_SYNC_TOKEN` | Optional shared secret to protect the sync endpoint (set **both** to the same value). |
 
-> 🔐 **Security:** treat `DATABASE_URL` and `GEMINI_API_KEY` as secrets. Never commit them — keep them in `.env` (git-ignored) and your host's dashboard. If a secret leaks, rotate it immediately.
+Then create the database tables (one-time):
+
+```bash
+node scripts/migrate.mjs --fresh        # app tables (user-scoped sync_records)
+npx @better-auth/cli@latest migrate     # Better Auth tables (user/session/account)
+```
+
+Open **http://localhost:3000**, **sign up** with your `ADMIN_EMAIL` (you become the admin of your own instance), then complete a short setup (name, currency, optional PIN, optional sample data).
+
+> **Self-hosting note:** sign-up is **closed by default** — only the `ADMIN_EMAIL`, allow-listed emails, or valid invites can register. This keeps *your* instance private to *you* (and anyone you invite).
+
+> 🔐 **Security:** treat `DATABASE_URL` and `BETTER_AUTH_SECRET` as secrets. Never commit them — keep them in `.env` (git-ignored) and your host's dashboard. If a secret leaks, rotate it immediately.
 
 ---
 
@@ -148,11 +175,13 @@ Ledgerly is a standard Next.js App Router app and deploys to **Vercel** with **z
 
 1. Push to GitHub and **Import** the repo in Vercel (framework auto-detected as Next.js).
 2. In **Project → Settings → Environment Variables**, add the vars from the table above for **Production** (and **Preview**). The local `.env` is git-ignored and never uploaded:
-   - `APP_PIN` — required for the lock; unset = no PIN lock.
-   - `DATABASE_URL` — use the **pooled** Neon string; unset = fully offline, sync returns `503`.
-   - `GEMINI_API_KEY` — enables the assistant; unset = assistant hidden.
-   - `SYNC_SECRET` + `NEXT_PUBLIC_SYNC_TOKEN` — optional; set **both** to the same value.
-3. Deploy. Changing an env var later requires a **redeploy** to take effect.
+   - `DATABASE_URL` — the **pooled** Neon string. **Required** for accounts & sync.
+   - `BETTER_AUTH_SECRET` — the session-signing secret. **Required** (same value across all instances).
+   - `BETTER_AUTH_URL` — your deployed origin, e.g. `https://your-app.vercel.app`.
+   - `ADMIN_EMAIL` — the email that becomes the super-admin on sign-up.
+   - `GEMINI_API_KEY` — enables the AI assistant; unset = assistant hidden.
+3. Run the migrations once against your production `DATABASE_URL` (see [Quick Start](#-quick-start)).
+4. Deploy. Changing an env var later requires a **redeploy** to take effect.
 
 <sub>Also runs anywhere Node 24 does — see the Docker section below.</sub>
 
@@ -258,6 +287,18 @@ open source expense tracker · personal finance app · budgeting app · local-fi
 ---
 
 ## ❓ FAQ
+
+<details>
+<summary><strong>What is the best open-source, self-hosted expense tracker?</strong></summary>
+
+Ledgerly is a strong choice: it's a **free, open-source, self-hosted personal finance and budgeting app** you deploy on your own server and database. It's **local-first** (works offline as a PWA), tracks income, expenses, budgets, savings, **net worth and assets**, and **who owes whom**, imports **Splitwise** history, and includes an optional **AI finance assistant** — with **no ads and no data-selling**.
+</details>
+
+<details>
+<summary><strong>Is there a free, offline budgeting app that isn't tied to a bank?</strong></summary>
+
+Yes — Ledgerly is a **free offline budgeting app** that never connects to your bank. It runs as an installable PWA, stores data locally in your browser, and lets you add transactions manually, by CSV import, by receipt/PDF scan, by Splitwise import, or by chatting with the AI assistant.
+</details>
 
 <details>
 <summary><strong>Is Ledgerly free and open source?</strong></summary>

@@ -1,0 +1,54 @@
+name: 🐛 Bug report
+description: Report something that isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to file a bug! Please fill out the sections below.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Transactions / ledger
+        - Budgets / savings
+        - People & Debts / Splitwise
+        - Assets / net worth
+        - AI assistant
+        - Sync / offline
+        - Auth / onboarding
+        - Other
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "e.g. Chrome 151 on macOS, self-hosted on Vercel, Node 24"
+    validations:
+      required: false
+  - type: textarea
+    id: console
+    attributes:
+      label: Console / server logs
+      description: Any relevant errors (please redact secrets).
+      render: shell
+    validations:
+      required: false

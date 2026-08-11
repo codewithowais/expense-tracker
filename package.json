@@ -1,7 +1,37 @@
 {
-  "name": "expense-tracker",
+  "name": "ledgerly",
   "version": "0.1.0",
   "private": true,
+  "description": "Open-source, local-first personal finance & expense tracker PWA — offline budgeting, net-worth & asset tracking, debt splitting, Splitwise import, and an AI finance assistant. A privacy-first Mint/YNAB/Splitwise alternative.",
+  "keywords": [
+    "expense-tracker",
+    "personal-finance",
+    "budgeting",
+    "money-manager",
+    "local-first",
+    "offline-first",
+    "pwa",
+    "self-hosted",
+    "privacy",
+    "net-worth-tracker",
+    "splitwise-alternative",
+    "mint-alternative",
+    "ynab-alternative",
+    "nextjs",
+    "react",
+    "typescript",
+    "ai-assistant"
+  ],
+  "author": "Owais Ahmed (@codewithowais)",
+  "license": "MIT",
+  "homepage": "https://github.com/codewithowais/expense-tracker#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codewithowais/expense-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codewithowais/expense-tracker/issues"
+  },
   "engines": {
     "node": "24.x"
   },
