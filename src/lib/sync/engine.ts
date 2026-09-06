@@ -22,6 +22,7 @@ export type SyncOutcome =
 
 type Row = { id: string; updatedAt: string; deletedAt?: string | null } & Record<string, unknown>;
 type QueuedChange = { collection: SyncCollection; record: SyncRecord };
+type EncodedPayload = { body: BodyInit; headers: Record<string, string> };
 
 function syncToken(): string | undefined {
   return process.env.NEXT_PUBLIC_SYNC_TOKEN || undefined;
@@ -77,6 +78,20 @@ function toGroups(entries: QueuedChange[]): SyncPushGroup[] {
   return groups;
 }
 
+async function encodeSyncPayload(payload: SyncRequest): Promise<EncodedPayload> {
+  const json = JSON.stringify(payload);
+  const plainBytes = new TextEncoder().encode(json).byteLength;
+  if (typeof CompressionStream === "undefined") return { body: json, headers: {} };
+  try {
+    const stream = new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"));
+    const compressed = await new Response(stream).arrayBuffer();
+    if (compressed.byteLength >= plainBytes) return { body: json, headers: {} };
+    return { body: compressed, headers: { "content-encoding": "gzip" } };
+  } catch {
+    return { body: json, headers: {} };
+  }
+}
+
 async function exchangeWithServer(
   since: string | null,
   entries: QueuedChange[],
@@ -87,13 +102,15 @@ async function exchangeWithServer(
   const payload: SyncRequest = { since, changes: toGroups(entries) };
   try {
     const token = syncToken();
+    const encoded = await encodeSyncPayload(payload);
     const res = await fetch("/api/sync", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         ...(token ? { "x-sync-token": token } : {}),
+        ...encoded.headers,
       },
-      body: JSON.stringify(payload),
+      body: encoded.body,
     });
     if (res.status === 503) return { ok: false, outcome: { status: "unconfigured" } };
     if (res.status === 413) {
