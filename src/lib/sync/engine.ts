@@ -21,6 +21,7 @@ export type SyncOutcome =
   | { status: "error"; message: string };
 
 type Row = { id: string; updatedAt: string; deletedAt?: string | null } & Record<string, unknown>;
+type QueuedChange = { collection: SyncCollection; record: SyncRecord };
 
 function syncToken(): string | undefined {
   return process.env.NEXT_PUBLIC_SYNC_TOKEN || undefined;
@@ -49,6 +50,83 @@ export function syncNow(): Promise<SyncOutcome> {
   return running;
 }
 
+function advancePullCursor(
+  pullCursor: string | null,
+  records: SyncResponse["records"],
+  serverTime: string,
+): string {
+  let maxRemote = pullCursor ?? "";
+  for (const rec of records) {
+    if (rec.updatedAt > maxRemote) maxRemote = rec.updatedAt;
+  }
+  const cappedRemote = maxRemote > serverTime ? serverTime : maxRemote;
+  return cappedRemote > (pullCursor ?? "") ? cappedRemote : (pullCursor ?? serverTime);
+}
+
+function toGroups(entries: QueuedChange[]): SyncPushGroup[] {
+  if (!entries.length) return [];
+  const groups: SyncPushGroup[] = [];
+  for (const entry of entries) {
+    const last = groups[groups.length - 1];
+    if (last?.collection === entry.collection) {
+      last.records.push(entry.record);
+    } else {
+      groups.push({ collection: entry.collection, records: [entry.record] });
+    }
+  }
+  return groups;
+}
+
+async function exchangeWithServer(
+  since: string | null,
+  entries: QueuedChange[],
+): Promise<
+  | { ok: true; records: SyncResponse["records"]; nextSince: string; pushed: number }
+  | { ok: false; outcome: SyncOutcome }
+> {
+  const payload: SyncRequest = { since, changes: toGroups(entries) };
+  try {
+    const token = syncToken();
+    const res = await fetch("/api/sync", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(token ? { "x-sync-token": token } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 503) return { ok: false, outcome: { status: "unconfigured" } };
+    if (res.status === 413) {
+      if (entries.length <= 1) {
+        return { ok: false, outcome: { status: "error", message: "Sync payload too large" } };
+      }
+      const mid = Math.floor(entries.length / 2);
+      const first = await exchangeWithServer(since, entries.slice(0, mid));
+      if (!first.ok) return first;
+      const second = await exchangeWithServer(first.nextSince, entries.slice(mid));
+      if (!second.ok) return second;
+      return {
+        ok: true,
+        records: [...first.records, ...second.records],
+        nextSince: second.nextSince,
+        pushed: first.pushed + second.pushed,
+      };
+    }
+    if (!res.ok) {
+      return { ok: false, outcome: { status: "error", message: `Server responded ${res.status}` } };
+    }
+    const data = (await res.json()) as SyncResponse;
+    return {
+      ok: true,
+      records: data.records,
+      nextSince: advancePullCursor(since, data.records, data.serverTime),
+      pushed: entries.length,
+    };
+  } catch {
+    return { ok: false, outcome: { status: "offline" } };
+  }
+}
+
 async function doSync(): Promise<SyncOutcome> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return { status: "offline" };
@@ -65,57 +143,35 @@ async function doSync(): Promise<SyncOutcome> {
   const pushCursor = (await metaRepo.get(SYNC_PUSH_CURSOR_KEY)) ?? pullCursor;
 
   // --- Gather local changes since the push cursor (via the updatedAt index) ---
-  const changes: SyncPushGroup[] = [];
+  const queued: QueuedChange[] = [];
   for (const collection of SYNC_COLLECTIONS) {
     const table = db.table(collection);
     const rows = (pushCursor
       ? await table.where("updatedAt").above(pushCursor).toArray()
       : await table.toArray()) as Row[];
-    const records: SyncRecord[] = [];
     for (const row of rows) {
       if (!row.updatedAt) continue;
-      records.push({
+      const record: SyncRecord = {
         id: row.id,
         updatedAt: row.updatedAt,
         deletedAt: row.deletedAt ?? null,
         doc: row,
-      });
+      };
+      queued.push({ collection, record });
     }
-    if (records.length) changes.push({ collection, records });
   }
-
-  const payload: SyncRequest = { since: pullCursor, changes };
 
   // --- Exchange with the server ---
-  let data: SyncResponse;
-  try {
-    const token = syncToken();
-    const res = await fetch("/api/sync", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(token ? { "x-sync-token": token } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
-    if (res.status === 503) return { status: "unconfigured" };
-    if (!res.ok) {
-      return { status: "error", message: `Server responded ${res.status}` };
-    }
-    data = (await res.json()) as SyncResponse;
-  } catch {
-    return { status: "offline" };
-  }
+  const exchange = await exchangeWithServer(pullCursor, queued);
+  if (!exchange.ok) return exchange.outcome;
 
   // --- Apply pulled records (LWW) without re-triggering change events ---
   try {
-    let maxRemote = pullCursor ?? "";
     const byCollection = new Map<SyncCollection, SyncResponse["records"]>();
-    for (const rec of data.records) {
+    for (const rec of exchange.records) {
       const arr = byCollection.get(rec.collection) ?? [];
       arr.push(rec);
       byCollection.set(rec.collection, arr);
-      if (rec.updatedAt > maxRemote) maxRemote = rec.updatedAt;
     }
 
     let pulled = 0;
@@ -143,21 +199,15 @@ async function doSync(): Promise<SyncOutcome> {
     });
 
     const at = new Date().toISOString();
-    // Clamp the pull cursor to the server's clock: a future-dated peer record
-    // must not push `since` past real time and hide other devices' records.
-    const serverTime = data.serverTime ?? at;
-    const cappedRemote = maxRemote > serverTime ? serverTime : maxRemote;
-    const newPullCursor = cappedRemote > (pullCursor ?? "") ? cappedRemote : (pullCursor ?? serverTime);
     // Push cursor tracks THIS device's wall clock with no monotonic guard, so a
     // backward clock correction self-corrects on the next sync (harmless
     // re-push of already-synced rows) instead of stranding new edits above a
     // stale frontier.
-    await metaRepo.set(SYNC_CURSOR_KEY, newPullCursor);
+    await metaRepo.set(SYNC_CURSOR_KEY, exchange.nextSince);
     await metaRepo.set(SYNC_PUSH_CURSOR_KEY, syncStart);
     await metaRepo.set(SYNC_LAST_AT_KEY, at);
 
-    const pushed = changes.reduce((n, g) => n + g.records.length, 0);
-    return { status: "ok", pushed, pulled, at };
+    return { status: "ok", pushed: exchange.pushed, pulled, at };
   } catch (err) {
     return { status: "error", message: err instanceof Error ? err.message : "Apply failed" };
   }
