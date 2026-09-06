@@ -22,6 +22,10 @@ export type SyncOutcome =
 
 type Row = { id: string; updatedAt: string; deletedAt?: string | null } & Record<string, unknown>;
 type QueuedChange = { collection: SyncCollection; record: SyncRecord };
+type EncodedPayload = { body: BodyInit; headers: Record<string, string>; byteLength: number };
+
+const MAX_SYNC_REQUEST_BYTES = 900_000;
+const SYNC_REQUEST_TIMEOUT_MS = 20_000;
 
 function syncToken(): string | undefined {
   return process.env.NEXT_PUBLIC_SYNC_TOKEN || undefined;
@@ -77,6 +81,28 @@ function toGroups(entries: QueuedChange[]): SyncPushGroup[] {
   return groups;
 }
 
+async function encodeSyncPayload(payload: SyncRequest): Promise<EncodedPayload> {
+  const json = JSON.stringify(payload);
+  const plainByteLength = new TextEncoder().encode(json).byteLength;
+  if (typeof CompressionStream === "undefined") {
+    return { body: json, headers: {}, byteLength: plainByteLength };
+  }
+  try {
+    const stream = new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"));
+    const compressed = await new Response(stream).arrayBuffer();
+    if (compressed.byteLength >= plainByteLength) {
+      return { body: json, headers: {}, byteLength: plainByteLength };
+    }
+    return {
+      body: compressed,
+      headers: { "content-encoding": "gzip" },
+      byteLength: compressed.byteLength,
+    };
+  } catch {
+    return { body: json, headers: {}, byteLength: plainByteLength };
+  }
+}
+
 async function exchangeWithServer(
   since: string | null,
   entries: QueuedChange[],
@@ -86,15 +112,45 @@ async function exchangeWithServer(
 > {
   const payload: SyncRequest = { since, changes: toGroups(entries) };
   try {
+    const encoded = await encodeSyncPayload(payload);
+    if (encoded.byteLength > MAX_SYNC_REQUEST_BYTES) {
+      if (entries.length <= 1) {
+        return {
+          ok: false,
+          outcome: { status: "error", message: "A single change is too large to sync." },
+        };
+      }
+      const mid = Math.floor(entries.length / 2);
+      const first = await exchangeWithServer(since, entries.slice(0, mid));
+      if (!first.ok) return first;
+      const second = await exchangeWithServer(first.nextSince, entries.slice(mid));
+      if (!second.ok) return second;
+      return {
+        ok: true,
+        records: [...first.records, ...second.records],
+        nextSince: second.nextSince,
+        pushed: first.pushed + second.pushed,
+      };
+    }
+
     const token = syncToken();
-    const res = await fetch("/api/sync", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(token ? { "x-sync-token": token } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), SYNC_REQUEST_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch("/api/sync", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(token ? { "x-sync-token": token } : {}),
+          ...encoded.headers,
+        },
+        body: encoded.body,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
     if (res.status === 503) return { ok: false, outcome: { status: "unconfigured" } };
     if (res.status === 413) {
       if (entries.length <= 1) {
@@ -122,7 +178,10 @@ async function exchangeWithServer(
       nextSince: advancePullCursor(since, data.records, data.serverTime),
       pushed: entries.length,
     };
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return { ok: false, outcome: { status: "error", message: "Sync request timed out. Please try again." } };
+    }
     return { ok: false, outcome: { status: "offline" } };
   }
 }

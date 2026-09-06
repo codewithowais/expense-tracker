@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { gunzipSync } from "node:zlib";
 import { ensureSchema, getSql } from "@/lib/server/neon";
 import { getSession } from "@/lib/auth/session";
 import {
@@ -13,6 +14,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const COLLECTION_SET = new Set<string>(SYNC_COLLECTIONS);
+
+async function parseBody(request: Request): Promise<SyncRequest> {
+  const contentEncoding = request.headers.get("content-encoding")?.toLowerCase() ?? "";
+  if (contentEncoding.includes("gzip")) {
+    const compressed = Buffer.from(await request.arrayBuffer());
+    const text = gunzipSync(compressed).toString("utf8");
+    return JSON.parse(text) as SyncRequest;
+  }
+  return (await request.json()) as SyncRequest;
+}
 
 export async function POST(request: Request) {
   // Isolation is enforced here and ONLY here: the userId comes from the
@@ -31,7 +42,7 @@ export async function POST(request: Request) {
 
   let body: SyncRequest;
   try {
-    body = (await request.json()) as SyncRequest;
+    body = await parseBody(request);
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
